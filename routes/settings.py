@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash
 
 from db.database import db
 from db.models import FamilyMember, User
-from routes import login_required_api, model_required
+from routes import login_required_api
 from services import chat_service as cs
 from services import profile_service as ps
 from services.notify import notify, user_brief
@@ -35,7 +35,6 @@ def _state(me: User) -> dict:
 
 
 @bp.get("/settings")
-@model_required
 @login_required
 def settings_page():
     return render_template("settings.html", state=_state(current_user._get_current_object()), ok=request.args.get("ok"))
@@ -43,7 +42,6 @@ def settings_page():
 
 @bp.post("/api/settings")
 @login_required_api
-@model_required
 def update_settings():
     me, data = current_user._get_current_object(), request.get_json(silent=True) or {}
     for key in ("dark_mode", "agent3_enabled"):
@@ -57,7 +55,6 @@ def update_settings():
 
 @bp.post("/api/settings/verify-identity")
 @login_required_api
-@model_required
 def verify_identity():
     """Gia lap eKYC: kiem tra dinh dang so CCCD 12 chu so. KHONG luu so CCCD, chi luu co da xac minh."""
     me, data = current_user._get_current_object(), request.get_json(silent=True) or {}
@@ -72,7 +69,6 @@ def verify_identity():
 
 @bp.post("/api/settings/family")
 @login_required_api
-@model_required
 def update_family():
     me, data = current_user._get_current_object(), request.get_json(silent=True) or {}
     question = str(data.get("question") or "").strip()
@@ -101,7 +97,6 @@ def update_family():
 
 @bp.post("/api/settings/guardian")
 @login_required_api
-@model_required
 def update_guardian():
     me, data = current_user._get_current_object(), request.get_json(silent=True) or {}
     uid = data.get("user_id")

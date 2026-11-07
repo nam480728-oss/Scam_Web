@@ -136,6 +136,9 @@ class Message(db.Model):
     recalled_at = db.Column(db.DateTime, nullable=True)                       # thu hoi (noi dung an voi CA 2 ben)
     pinned_at = db.Column(db.DateTime, nullable=True)                         # ghim len dau cuoc chat
     pinned_by_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # ---- truy vet: IP / trinh duyet nguoi gui luc gui tin (CHI quan tri vien xem; tu xoa sau IP_RETENTION_DAYS) ----
+    sender_ip = db.Column(db.String(45), nullable=True)
+    sender_user_agent = db.Column(db.String(255), nullable=True)
 
     conversation = db.relationship("Conversation", backref=db.backref("messages", lazy="dynamic",
                                                                        cascade="all, delete-orphan"))
@@ -380,3 +383,63 @@ class AppealCapture(db.Model):
     passed = db.Column(db.Boolean, nullable=False, default=False)
     reason = db.Column(db.String(300), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+
+# =========================================================================== #
+# Truy vet IP ke lua dao (chi quan tri vien xem; nan nhan xem phan cua minh khi yeu cau duoc duyet)
+# =========================================================================== #
+class LoginLog(db.Model):
+    """IP moi lan dang nhap. Tu xoa sau IP_RETENTION_DAYS."""
+    __tablename__ = "login_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    ip = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    __table_args__ = (Index("ix_login_logs_user", "user_id", "id"), Index("ix_login_logs_created", "created_at"))
+
+
+class ScamTrace(db.Model):
+    """Ho so truy vet tao khi Ve si TU DONG CHAN (lan 3). Giu lau dai; luu ban sao ten de con dung khi tai khoan bi xoa."""
+    __tablename__ = "scam_traces"
+    id = db.Column(db.Integer, primary_key=True)
+    model_key = db.Column(db.String(20), nullable=False, default="svm")
+    offender_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    victim_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
+    offender_username = db.Column(db.String(30), nullable=False)
+    offender_name = db.Column(db.String(80), nullable=False)
+    victim_username = db.Column(db.String(30), nullable=False)
+    victim_name = db.Column(db.String(80), nullable=False)
+    block_nth = db.Column(db.SmallInteger, nullable=False, default=1)       # lan chan thu N (vong lap khieu nai)
+    # IP chinh = IP cua tin lua dao lan 3 (hoac IP dang nhap gan nhat neu tin khong co IP)
+    ip = db.Column(db.String(45), nullable=True, index=True)
+    user_agent = db.Column(db.String(255), nullable=True)
+    country = db.Column(db.String(80), nullable=True)
+    region = db.Column(db.String(120), nullable=True)
+    city = db.Column(db.String(120), nullable=True)
+    isp = db.Column(db.String(160), nullable=True)
+    geo_source = db.Column(db.String(10), nullable=False, default="unknown")   # demo | private | mmdb | online | unknown
+    evidence = db.Column(db.JSON, nullable=True)                 # {"messages": [...], "logins": [...], "ips": [...]}
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    offender = db.relationship("User", foreign_keys=[offender_id])
+    victim = db.relationship("User", foreign_keys=[victim_id])
+    __table_args__ = (Index("ix_scam_traces_model", "model_key", "id"),)
+
+
+class TraceRequest(db.Model):
+    """Nan nhan xin xem thong tin truy vet -> quan tri vien duyet / tu choi."""
+    __tablename__ = "trace_requests"
+    id = db.Column(db.Integer, primary_key=True)
+    trace_id = db.Column(db.Integer, db.ForeignKey("scam_traces.id", ondelete="CASCADE"), nullable=False, index=True)
+    requester_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    reason = db.Column(db.String(500), nullable=False)
+    status = db.Column(db.String(10), nullable=False, default="pending")    # pending | approved | rejected
+    admin_note = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    resolved_at = db.Column(db.DateTime, nullable=True)
+
+    trace = db.relationship("ScamTrace")
+    requester = db.relationship("User", foreign_keys=[requester_id])
+    __table_args__ = (Index("ix_trace_requests_status", "status", "id"),)

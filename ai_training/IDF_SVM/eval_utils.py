@@ -1,7 +1,6 @@
 """Tien ich danh gia + ve bieu do dung chung cho bai toan phan loai tin nhan lua dao.
 
-LUU Y: file nay giong het nhau o hai thu muc `phobert/` va `IDF_SVM/` de moi thu muc
-tu chua du moi thu (de quan ly, de dong goi). Neu sua o day thi sua ca ben kia.
+Dung cho train / danh gia TF-IDF + Linear SVM (thu muc nay tu chua du moi thu, de dong goi).
 
 Quy uoc: nhan 0 = tin binh thuong, nhan 1 = tin lua dao. `y_score` la diem/xac suat
 cua lop 1 (cang cao cang giong lua dao).
@@ -313,21 +312,11 @@ def save_json(obj, path):
 
 def environment_info() -> dict:
     info = {"python": sys.version.split()[0], "platform": platform.platform(), "processor": platform.processor()}
-    for mod in ("numpy", "pandas", "scipy", "sklearn", "matplotlib", "torch", "transformers", "pyvi", "joblib"):
+    for mod in ("numpy", "pandas", "scipy", "sklearn", "matplotlib", "joblib"):
         try:
             info[mod] = __import__(mod).__version__
         except Exception:  # noqa: BLE001
             info[mod] = None
-    try:
-        import torch
-
-        info["cuda_available"] = bool(torch.cuda.is_available())
-        if torch.cuda.is_available():
-            info["gpu"] = torch.cuda.get_device_name(0)
-            info["gpu_memory_gb"] = round(torch.cuda.get_device_properties(0).total_memory / 1024**3, 2)
-            info["cuda_version"] = torch.version.cuda
-    except Exception:  # noqa: BLE001
-        pass
     return info
 
 

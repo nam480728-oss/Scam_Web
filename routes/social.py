@@ -5,10 +5,11 @@ from sqlalchemy import func
 
 from db.database import db
 from db.models import User
-from routes import login_required_api, model_required
+from routes import login_required_api
 from services import chat_service as cs
 from services import notify as nt
 from services import profile_service as ps
+from services import reputation_service as rs
 from services import social_service as ss
 
 bp = Blueprint("social", __name__)
@@ -29,7 +30,6 @@ def _user_by_name(username: str) -> User:
 # Trang ca nhan
 # --------------------------------------------------------------------------- #
 @bp.get("/u/<username>")
-@model_required
 @login_required
 def profile_page(username: str):
     me, user = _me(), _user_by_name(username)
@@ -41,14 +41,14 @@ def profile_page(username: str):
     data = {"user": {**nt.user_brief(user), "bio": user.bio, "cover": f"/static/uploads/{user.cover_path}" if user.cover_path else None,
                      "joined": user.created_at.strftime("%m/%Y"), "birth_year": user.birth_year},
             "is_me": user.id == me.id, "relation": rel, "mutual": len(mutual),
+            "reputation": None if user.id == me.id else rs.badge(user, me.id),
             "posts": ss.user_posts(me, user)}
     return render_template("profile.html", user=user, friends=friends, friend_count=len(cs.friend_ids(user.id)),
-                           photos=ss.user_photos(user), data=data, mutual=len(mutual))
+                           photos=ss.user_photos(user), data=data, mutual=len(mutual), reputation=data["reputation"])
 
 
 @bp.post("/api/profile")
 @login_required_api
-@model_required
 def update_profile():
     me, data = _me(), request.get_json(silent=True) or {}
     if "display_name" in data:
@@ -76,7 +76,6 @@ def update_profile():
 
 @bp.post("/api/profile/<kind>")
 @login_required_api
-@model_required
 def upload_profile_image(kind: str):
     if kind not in ("avatar", "cover"):
         abort(404)
@@ -96,7 +95,6 @@ def upload_profile_image(kind: str):
 # Ban be
 # --------------------------------------------------------------------------- #
 @bp.get("/friends")
-@model_required
 @login_required
 def friends_page():
     return render_template("friends.html")
@@ -104,14 +102,12 @@ def friends_page():
 
 @bp.get("/api/friends/suggestions")
 @login_required_api
-@model_required
 def friend_suggestions():
     return jsonify(users=ss.suggestions(_me()))
 
 
 @bp.get("/api/users/<int:uid>/mutual")
 @login_required_api
-@model_required
 def mutual_friends(uid: int):
     cs.get_peer(current_user.id, uid)
     users = User.query.filter(User.id.in_(ss.mutual_ids(current_user.id, uid) or {0})).all()
@@ -122,7 +118,6 @@ def mutual_friends(uid: int):
 # Tim kiem
 # --------------------------------------------------------------------------- #
 @bp.get("/search")
-@model_required
 @login_required
 def search_page():
     q = request.args.get("q", "")
@@ -131,7 +126,6 @@ def search_page():
 
 @bp.get("/api/search")
 @login_required_api
-@model_required
 def search_api():
     return jsonify(users=ss.search(_me(), request.args.get("q", "")))
 

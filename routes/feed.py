@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, render_template, request
 from flask_login import current_user, login_required
 
-from routes import login_required_api, model_required
+from routes import login_required_api
 from services import social_service as ss
 from services.view_helpers import time_ago
 
@@ -16,7 +16,6 @@ def _fake_dto(fp) -> dict:
 
 
 @bp.get("/feed")
-@model_required
 @login_required
 def feed_page():
     me = current_user._get_current_object()
@@ -25,7 +24,6 @@ def feed_page():
 
 
 @bp.get("/post/<int:pid>")
-@model_required
 @login_required
 def post_page(pid: int):
     me = current_user._get_current_object()
@@ -34,7 +32,6 @@ def post_page(pid: int):
 
 @bp.post("/api/posts")
 @login_required_api
-@model_required
 def create_post():
     me = current_user._get_current_object()
     p = ss.create_post(me, request.form.get("body"), request.files.get("image"))
@@ -43,7 +40,6 @@ def create_post():
 
 @bp.delete("/api/posts/<int:pid>")
 @login_required_api
-@model_required
 def delete_post(pid: int):
     ss.delete_post(current_user._get_current_object(), pid)
     return jsonify(ok=True)
@@ -51,7 +47,6 @@ def delete_post(pid: int):
 
 @bp.post("/api/posts/<int:pid>/react")
 @login_required_api
-@model_required
 def react(pid: int):
     kind = (request.get_json(silent=True) or {}).get("kind")
     if kind is not None and not isinstance(kind, str):
@@ -61,14 +56,12 @@ def react(pid: int):
 
 @bp.get("/api/posts/<int:pid>/comments")
 @login_required_api
-@model_required
 def comments(pid: int):
     return jsonify(comments=ss.list_comments(current_user._get_current_object(), pid))
 
 
 @bp.post("/api/posts/<int:pid>/comments")
 @login_required_api
-@model_required
 def add_comment(pid: int):
     body = (request.get_json(silent=True) or {}).get("body")
     if not isinstance(body, str):
@@ -78,7 +71,6 @@ def add_comment(pid: int):
 
 @bp.post("/api/posts/<int:pid>/share")
 @login_required_api
-@model_required
 def share(pid: int):
     body = (request.get_json(silent=True) or {}).get("body")
     me = current_user._get_current_object()

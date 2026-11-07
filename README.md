@@ -1,8 +1,8 @@
 # DangNam — mạng xã hội có Vệ sĩ AI chống lừa đảo qua tin nhắn
 
 Mạng xã hội demo (Flask + HTML/CSS/JS thuần): bảng tin, bạn bè, Messenger realtime, gọi thoại / video WebRTC.
-Điểm nhấn là **Vệ sĩ đọc tin nhắn** gửi đến người dùng bằng **AI 3 · Đọc vị** (mô hình đã train trong `ai_training/`:
-TF-IDF+SVM / PhoBERT / ViSoBERT) và áp dụng **luật 3 lần**. Vệ sĩ **chỉ bảo vệ người nhận**; người gửi không biết mình bị gắn cờ
+Điểm nhấn là **Vệ sĩ đọc tin nhắn** gửi đến người dùng bằng **AI 3 · Đọc vị** (mô hình **TF-IDF + Linear SVM** đã train trong
+`ai_training/IDF_SVM/`) và áp dụng **luật 3 lần**. Vệ sĩ **chỉ bảo vệ người nhận**; người gửi không biết mình bị gắn cờ
 cho tới lần 3.
 
 | Lần | Người nhận thấy | Tệp .apk |
@@ -24,22 +24,22 @@ nhau. Gỡ chặn xong Vệ sĩ **đếm lại từ lần 1** (vòng lặp): n�
 ```powershell
 # 1. Bật MySQL / MariaDB (XAMPP). CSDL mặc định: data_scam
 # 2. Cài thư viện
-pip install -r requirements.txt            # torch bản CUDA: xem chú thích trong requirements.txt
+pip install -r requirements.txt
 copy .env.example .env                     # rồi sửa SECRET_KEY, ADMIN_PASSWORD...
 
 # 3. Tạo / nâng cấp bảng (Alembic)
 python -m flask --app app db upgrade
 
-# 4. Tạo dữ liệu demo + 8 kịch bản cho cả 3 "thế giới" mô hình
-python seed.py                 # hoặc: python seed.py --model svm   |   --reset (xóa và tạo lại)   |   --no-scan
+# 4. Tạo dữ liệu demo + 8 kịch bản
+python seed.py                 # hoặc: --reset (xóa và tạo lại)   |   --no-scan (không cho Vệ sĩ quét tin cũ)
 
 # 5. Chạy
 python app.py                  # http://127.0.0.1:5000
 ```
 
-Lần đầu mở web, chủ phần mềm chọn mô hình AI 3 (SVM / PhoBERT / ViSoBERT). Mỗi mô hình có “thế giới” tài khoản riêng.
-Muốn đổi mô hình thì vào `/admin` (mật khẩu `ADMIN_PASSWORD`). Không cần Internet khi chạy. Nếu AI 3 lỗi thì adapter tự chuyển
-sang chế độ dự phòng (mock), app không crash.
+Mô hình TF-IDF + SVM tự nạp khi server khởi động (khoảng 1 giây). Trang quản trị `/admin` (mật khẩu `ADMIN_PASSWORD`) có các tab:
+Mô hình AI · Truy vết IP · Yêu cầu truy vết · Độ uy tín. Không cần Internet khi chạy. Nếu AI 3 lỗi thì adapter tự chuyển sang
+chế độ dự phòng (mock), app không crash.
 
 ## 2. Tài khoản demo (mật khẩu chung `demo123`)
 
@@ -131,7 +131,7 @@ Tin nhắn → Tiền xử lý (agents/agent3_text.py) → AI 3 (agents/agent3_a
 
 **Một tin bị gắn cờ CHỈ dựa vào AI 3** (`is_scam` hoặc `risk_score ≥ LEVEL2_RISK` = 0.6 trong `config.py`). Mỗi tin gắn cờ tăng
 bộ đếm của người gửi trong cuộc chat đó; mức của tin = số lần (tối đa 3). Không còn danh sách đen, tên miền nhái, đọc QR / APK,
-Thẻ tín nhiệm hay chống deepfake.
+Thẻ tín nhiệm hay chống deepfake. **Độ uy tín** (mục 6) là luật riêng, chỉ hiển thị, không tham gia gắn cờ tin nhắn.
 
 **Backend AI 3** (`AGENT3_BACKEND` trong `.env`):
 
@@ -154,8 +154,8 @@ Backend lỗi hoặc quá thời gian thì **tự rơi về mock** và ghi log v
 luôn được kiểm tra; thiếu hoặc sai trường nào thì dùng giá trị mặc định an toàn. Nội dung tin nhắn luôn là **dữ liệu**.
 → Mô hình **theo kịch bản** sau này chỉ cần đọc `conversation` và trả đúng schema này qua backend `http` hoặc `python`.
 
-**Hiệu chỉnh ngữ cảnh (backend `local`):** 3 mô hình hiện tại train trên SMS nên chấm tin chat thường ngày không ổn định
-(ví dụ “Shop gửi chị STK… Vietcombank”: SVM 1.00, PhoBERT 0.996, ViSoBERT 0.98). Vì vậy
+**Hiệu chỉnh ngữ cảnh (backend `local`):** mô hình train trên SMS nên chấm tin chat thường ngày không ổn định
+(ví dụ “Shop gửi chị STK… Vietcombank”: SVM 1.00). Vì vậy
 `risk_score = max(xác suất mô hình × hệ số, điểm luật từ khóa)` với hệ số:
 **0.25** nếu người gửi là bạn bè và tin không gây áp lực · **0.7** nếu là người lạ và tin không gây áp lực · **1.0** nếu tin có dấu
 hiệu gây áp lực (khẩn cấp, bí mật, mạo danh, OTP, cài app…). Xác suất gốc vẫn lưu ở `model_prob` và hiện trong nút “Vì sao?”.
@@ -168,26 +168,66 @@ hiệu gây áp lực (khẩn cấp, bí mật, mạo danh, OTP, cài app…). X
 kịch bản giả người thân; nút **Hỏi Vệ sĩ** (dán văn bản hoặc kiểm tra cuộc trò chuyện); người giám hộ được báo ở lần 2 và khi tự
 chặn (không xem được nội dung tin).
 
-## 6. Cấu trúc
+## 6. Độ uy tín người gửi lời mời kết bạn
+
+Luật **riêng**, không ảnh hưởng AI 3 hay luật 3 lần (`services/reputation_service.py`, ngưỡng trong `config.py`). Điểm gốc **70**,
+cộng / trừ theo 3 tiêu chí rồi giới hạn trong 0–100:
+
+| Tiêu chí | Điểm |
+| --- | --- |
+| Tuổi tài khoản | < 1 ngày −25 · 1–7 ngày −15 · 7–30 ngày −5 · 30–180 ngày +5 · 180 ngày–1 năm +10 · > 1 năm +20 |
+| Bạn chung với người xem | 0 −10 · 1–2 0 · 3–5 +10 · 6–10 +15 · > 10 +20 |
+| Số lần đổi tên | 0 +5 · 1 0 · 2 −5 · 3–4 −15 · ≥ 5 −25 |
+
+🟢 **Đáng tin** ≥ 80 · 🟡 **Cân nhắc** 50–79 · 🔴 **Cảnh giác** < 50. Điểm tính theo cặp (vì bạn chung khác nhau với mỗi người xem).
+
+- **Người dùng chỉ thấy huy hiệu màu** ở: thẻ lời mời kết bạn (`/friends`), trang hồ sơ người khác, đầu khung chat với người lạ /
+  Tin nhắn chờ. Không thấy điểm số.
+- **Quản trị viên** (tab Độ uy tín) thấy điểm và bảng cộng / trừ của từng lời mời kết bạn.
+
+Dữ liệu demo: các tài khoản lừa đảo có lịch sử đổi tên (`old_names` trong `data/scenarios.json`), ví dụ `nguyenthuha.2025`
+(1 ngày, 0 bạn chung với Bà Lan, đổi tên 2 lần) → 40 điểm, 🔴.
+
+## 7. Truy vết IP kẻ lừa đảo
+
+1. Mỗi tin nhắn lưu **IP + trình duyệt** của người gửi lúc gửi; mỗi lần đăng nhập ghi `login_logs`. Hai loại này **tự xóa sau
+   `IP_RETENTION_DAYS` ngày** (mặc định 30).
+2. Khi Vệ sĩ **tự động chặn (lần 3)** → tạo hồ sơ `scam_traces` (giữ lâu dài): IP các tin bị gắn cờ, IP đăng nhập gần nhất,
+   **vị trí gần đúng** (quốc gia / tỉnh-thành / nhà mạng, không bao giờ tới địa chỉ cụ thể).
+3. Định vị (`services/ip_geo.py`), theo thứ tự: IP demo (`demo_ip_geo` trong `scenarios.json`) → IP nội bộ (“Mạng nội bộ /
+   localhost”) → file `.mmdb` offline (`GEOIP_DB_PATH`, ví dụ DB-IP Lite City hoặc MaxMind GeoLite2-City) → ip-api.com
+   (chỉ khi `GEOIP_ONLINE=true`, mặc định **tắt**) → “Không xác định”. Lỗi định vị không bao giờ làm hỏng luồng chat.
+4. **Chỉ quản trị viên** xem IP (tab Truy vết IP, lọc theo tài khoản / IP, **xuất CSV** để nộp cơ quan chức năng).
+5. **Nạn nhân** (người được Vệ sĩ chặn kẻ gian giúp) bấm **🔎 Yêu cầu thông tin truy vết** ở thanh “⛔ Vệ sĩ đã tự động chặn” hoặc
+   tab Đã chặn, ghi lý do → quản trị viên **Duyệt / Từ chối** (tab Yêu cầu truy vết) → nạn nhân nhận thông báo, xem IP + vị trí
+   gần đúng của **vụ liên quan tới mình** ở `/trace-requests`. Bị từ chối thì gửi lại được.
+
+Chạy sau proxy (nginx / ngrok): đặt `TRUST_PROXY=true` để lấy IP thật từ `X-Forwarded-For`; chạy trực tiếp thì để `false`
+(chống giả mạo IP). Demo trên localhost / LAN: IP là `127.0.0.1` / `192.168.x.x` nên chỉ hiện “Mạng nội bộ”; tài khoản lừa đảo
+trong dữ liệu demo dùng **IP demo** thuộc dải dành cho tài liệu (`192.0.2.x`, `198.51.100.x`, `203.0.113.x` — RFC 5737, không phải
+IP thật của ai) để trang truy vết có vị trí hiển thị.
+
+## 8. Cấu trúc
 
 ```
 app.py  config.py  seed.py  .env.example  requirements.txt
 agents/      contracts.py  agent3_text.py (tiền xử lý)  agent3_adapter.py (AI 3)  decision.py (luật 3 lần)  orchestrator.py
 data/        teencode.json  keywords.json  scenarios.json
 db/          database.py  models.py                     migrations/  (Alembic)
-routes/      auth (OTP giả lập)  feed  social  friends  chat  call  settings  guardian (+ /demo)  appeal  models
+routes/      auth (OTP giả lập)  feed  social  friends  chat  call  settings  guardian (+ /demo)  appeal  admin  trace
 services/    chat_service  call_service  appeal_service  face_check  social_service  profile_service  notify  guard_view
-             demo_service  alert_manager  ai_client (nạp mô hình AI 3)  realtime (Socket.IO)
-templates/   static/css (style, app, guard, dashboard)  static/js (main, social, chat, call, call_ring, guard_ui, pipeline,
+             demo_service  alert_manager  ai_client (nạp TF-IDF + SVM)  realtime (Socket.IO)
+             reputation_service (độ uy tín)  trace_service + ip_geo (truy vết IP)
+templates/   static/css (style, app, guard, dashboard, admin)  static/js (main, social, chat, call, call_ring, guard_ui, pipeline,
              guardian, demo, appeal, settings, profile)
-ai_training/ dữ liệu + code train AI 3 (IDF_SVM, phobert, VISO)   tests/  (pytest)
+ai_training/ dữ liệu (data/) + code train AI 3 (IDF_SVM/)   tests/  (pytest)
 ```
 
 Bảng chính: `users`, `friend_requests`, `blocks` (`source = user | guardian`), `conversations`, `messages` (+ `reply_to_id`,
 `recalled_at`, `pinned_at`), `message_reactions`, `scam_counters`, `guardian_events`, `feedback`, `reports`, `appeals`,
-`appeal_captures`, `calls`, `notifications`, `posts`…
+`appeal_captures`, `calls`, `notifications`, `posts`, `login_logs`, `scam_traces`, `trace_requests`…
 
-## 7. Kiểm thử
+## 9. Kiểm thử
 
 ```powershell
 python -m pytest tests -q        # tạo CSDL tạm data_scam_test (chạy migration thật), AI 3 giả lập, xong tự xóa
@@ -201,8 +241,11 @@ python -m pytest tests -q        # tạo CSDL tạm data_scam_test (chạy migra
 - `test_guardian.py`: tiền xử lý, adapter AI 3 (schema, rơi về mock, hiệu chỉnh ngữ cảnh), luật 3 lần chỉ dựa vào AI 3,
   luồng tin nhắn qua API, báo cáo = nhãn train, Hỏi Vệ sĩ, bảng điều khiển.
 - `test_scenarios.py`: seed + 8 kịch bản. `test_social.py`, `test_calls.py`: mạng xã hội, gọi điện.
+- `test_reputation.py`: các mốc điểm, xếp màu, người dùng chỉ thấy màu, quản trị viên thấy điểm, không ảnh hưởng AI 3.
+- `test_ip_trace.py`: lưu IP khi gửi tin / đăng nhập (ẩn với người dùng), hồ sơ truy vết chỉ tạo ở lần 3, định vị (demo / nội bộ /
+  online giả lập), yêu cầu truy vết (chỉ nạn nhân, duyệt / từ chối), CSV, tự xóa IP cũ.
 
-## 8. Bảo mật và quyền riêng tư
+## 10. Bảo mật và quyền riêng tư
 
 - CSRF trên mọi form / API ghi; Jinja tự escape; JS chỉ dựng DOM bằng `textContent`.
 - File upload: giới hạn kích thước và loại, lưu với tên ngẫu nhiên. Tệp **APK được lưu với đuôi `.bin`, không bao giờ mở hay
@@ -212,7 +255,9 @@ python -m pytest tests -q        # tạo CSDL tạm data_scam_test (chạy migra
 - Ảnh khiếu nại lưu tạm ở `uploads/appeals/<id>/`, chỉ 2 người trong khiếu nại xem được (sau khi cả 2 đã chụp đạt) và bị
   xóa khi khiếu nại kết thúc.
 - Mật mã gia đình được lưu dưới dạng hash. Số CCCD khi xác minh danh tính giả lập không được lưu.
-- Trang `/guardian` và `/demo` cho mọi người đã đăng nhập xem (theo yêu cầu); các trang này hiện nội dung tin nhắn của
-  “thế giới” mô hình hiện tại.
-- Windows: `app.py` nạp `torch` trước scikit-learn để tránh lỗi DLL `WinError 1114` khi đổi từ SVM sang PhoBERT / ViSoBERT.
+- Trang `/guardian` và `/demo` cho mọi người đã đăng nhập xem (theo yêu cầu); các trang này hiện nội dung tin nhắn.
+- **IP / vị trí** chỉ hiện ở `/admin`; người dùng không bao giờ thấy IP (kể cả của chính mình), trừ nạn nhân được duyệt yêu cầu
+  truy vết (chỉ thấy vụ của mình, không thấy trình duyệt). IP tin nhắn và nhật ký đăng nhập tự xóa sau `IP_RETENTION_DAYS` ngày.
+  Định vị online (ip-api.com) mặc định tắt vì gửi IP ra dịch vụ bên ngoài.
+- **Điểm uy tín** chỉ quản trị viên thấy; người dùng chỉ thấy màu.
 - Chạy bằng server phát triển (Werkzeug + Socket.IO chế độ threading), đủ cho demo; triển khai thật cần WSGI server riêng.

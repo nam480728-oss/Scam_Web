@@ -84,8 +84,8 @@ def test_agent3_local_context_calibration():
 
         def close(self):
             pass
-    old = manager._predictor, manager.active
-    manager.set_predictor("svm", Always())
+    old = manager._predictor
+    manager.set_predictor(Always())
     try:
         r = Reader(backend="local")
         msg = "Shop gửi chị STK nhé 0123456789"
@@ -97,7 +97,7 @@ def test_agent3_local_context_calibration():
         u = r.analyze(r.build_payload([{"role": "sender", "text": urgent}], analyze_text(urgent), is_friend=True))
         assert u.risk_score >= 0.85 and u.calibration["factor"] == 1.0          # ban be nhung gay ap luc: khong giam
     finally:
-        manager._predictor, manager.active = old
+        manager.set_predictor(old)
 
 
 # =========================================================================== luong day du qua API

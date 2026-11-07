@@ -116,4 +116,3 @@ python predict_svm.py --model outputs/<run>/model/tfidf_svm.joblib --file tin_nh
 
 - File `.joblib` phụ thuộc `preprocess.py` (cùng thư mục) và đúng phiên bản scikit-learn đã dùng để train (ghi ở `environment.json`).
 - Dữ liệu có nhiều tin do máy sinh theo khuôn, nên điểm val/test có thể cao hơn thực tế — cần tập tin thật độc lập để kiểm tra cuối.
-- `eval_utils.py` giống hệt file cùng tên trong `../phobert/`; sửa thì sửa cả hai.

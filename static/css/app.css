@@ -225,3 +225,14 @@ img.avatar { object-fit: cover; background: var(--hover); }
   .media-drawer { width: 100%; }
   #msearch-btn, #media-btn { display: none; }               /* tren dien thoai: nam trong menu ⋮ */
 }
+
+/* ---- Độ uy tín tài khoản (xanh / vàng / đỏ) ---- */
+.rep-badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  border: 1px solid; line-height: 1.6; white-space: nowrap; vertical-align: middle; }
+.rep-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.rep-green { color: var(--ok-text); background: var(--ok-bg); border-color: var(--ok); }
+.rep-yellow { color: var(--yellow-text); background: var(--yellow-bg); border-color: var(--yellow-line); }
+.rep-red { color: var(--red-deep); background: var(--red-bg); border-color: var(--red-line); }
+.person-card .rep-badge { margin-top: 6px; }
+.rep-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.sb-head .rep-badge { margin-left: 4px; }

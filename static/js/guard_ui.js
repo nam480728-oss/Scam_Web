@@ -14,7 +14,9 @@
     const head = el("div", "sb-head");
     head.append(el("span", "sb-ico", "👤"), el("b", null, `${SC.displayName(c.other)} chưa là bạn bè của bạn`), el("span", "pill", `${c.mutual || 0} bạn chung`));
     if (c.request) head.appendChild(el("span", "pill warn", "Tin nhắn chờ"));
+    if (c.reputation) head.appendChild(SC.repBadge(c.reputation));
     b.appendChild(head);
+    if (c.reputation && c.reputation.level !== "green") b.appendChild(el("div", "sb-reason", `Độ uy tín: ${c.reputation.label}. ${c.reputation.hint}`));
     b.appendChild(el("div", "sb-reason", "Vệ sĩ đọc kỹ các tin của người lạ. Hãy thận trọng nếu được nhờ chuyển tiền, đọc mã OTP hay cài ứng dụng. Tin nhắn thoại không được kiểm tra."));
   };
 

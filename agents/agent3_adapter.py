@@ -1,7 +1,7 @@
 """AI 3 · Doc vi: cuoc tro chuyen nay co phai kich ban lua dao khong? - ADAPTER cho model DA TRAIN.
 
 Khong tu viet model. Chon backend qua .env (AGENT3_BACKEND):
-  local  : (mac dinh) goi mo hinh dang nap trong app (services/ai_client.py: TF-IDF+SVM / PhoBERT / ViSoBERT).
+  local  : (mac dinh) goi mo hinh dang nap trong app (services/ai_client.py: TF-IDF + Linear SVM).
   http   : POST payload toi AGENT3_URL (timeout AGENT3_TIMEOUT), nhan JSON theo schema dau ra.
   python : import ham AGENT3_MODULE ("goi.module:ham"), goi ham(payload: dict) -> dict.
   mock   : luat don gian tren tu khoa tin hieu (dung khi tat model / backend loi).
@@ -10,7 +10,7 @@ Backend that loi / qua thoi gian -> TU ROI VE mock va ghi log rieng (logs/agent3
 An toan: noi dung tin nhan luon la DU LIEU trong payload, khong bao gio ghep vao chi dan he thong nao.
 Dau ra duoc kiem tra (validate); thieu truong nao thi dung gia tri mac dinh an toan.
 
-Hieu chinh ngu canh (backend local): 3 mo hinh duoc train tren SMS, cham tin chat thuong ngay khong on dinh
+Hieu chinh ngu canh (backend local): mo hinh duoc train tren SMS, cham tin chat thuong ngay khong on dinh
 (vd "Shop gui chi STK..." ~1.0). map_response() nhan xac suat goc voi he so ngu canh (nguoi gui la ban be + khong co
 dau hieu gay ap luc -> giam manh) roi ket hop diem luat. Xac suat goc van luu trong model_prob.
 

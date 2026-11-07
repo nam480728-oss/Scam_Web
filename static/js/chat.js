@@ -116,8 +116,8 @@
         u.i_blocked ? btn("Bỏ chặn", "", () => unblock(u)) : btn("Nhắn tin", "btn-primary", () => openWithUser(u.id))])));
     } else if (state.tab === "blocked") {
       if (!state.blocked.length) list.appendChild(empty("🛡️", "Bạn chưa chặn ai."));
-      state.blocked.forEach((u) => list.appendChild(personItem(u, [u.block_source === "guardian"
-        ? btn("🛡️ Khiếu nại", "", () => openAppeal(u)) : btn("Bỏ chặn", "", () => unblock(u))])));
+      state.blocked.forEach((u) => list.appendChild(personItem(u, u.block_source === "guardian"
+        ? [btn("🛡️ Khiếu nại", "", () => openAppeal(u)), traceAction(u, u.trace)].filter(Boolean) : [btn("Bỏ chặn", "", () => unblock(u))])));
     }
   }
 
@@ -594,8 +594,31 @@
     if (ap.status === "open") box.appendChild(btn("Tiếp tục khiếu nại", "btn-primary", () => { location.href = `/appeal/${ap.id}`; }));
     else if (ap.can_open) box.appendChild(btn(`🛡️ Khiếu nại gỡ chặn (còn ${ap.remaining} lần)`, "btn-primary", () => openAppeal(c.other)));
     else box.appendChild(el("span", "muted small", "Đã hết lượt khiếu nại."));
+    const tr = traceAction(c.other, gb.trace);
+    if (tr) box.appendChild(tr);
     return box;
   }
+
+  // Nạn nhân xin xem thông tin truy vết (IP, vị trí gần đúng) của kẻ gian -> quản trị viên duyệt
+  function traceAction(u, trace) {
+    if (!trace) return null;
+    if (trace.status === "pending") return el("span", "muted small", "🕓 Đã gửi yêu cầu truy vết");
+    if (trace.status === "approved") { const a = el("a", "btn", "🔎 Xem thông tin truy vết"); a.href = "/trace-requests"; return a; }
+    return btn(trace.status === "rejected" ? "🔎 Gửi lại yêu cầu truy vết" : "🔎 Yêu cầu thông tin truy vết", "", () => requestTrace(u));
+  }
+  const requestTrace = guard(async (u) => {
+    const body = el("div", "trace-form");
+    const ta = el("textarea", "input"); ta.rows = 4; ta.maxLength = 500;
+    ta.placeholder = "Lý do (ví dụ: tôi đã bị lừa chuyển tiền và cần nộp thông tin cho công an)";
+    body.appendChild(ta);
+    const ok = await SC.dialog({ title: "Yêu cầu thông tin truy vết", icon: "🔎", ok: "Gửi yêu cầu", body,
+      text: `Vệ sĩ đã lưu IP và vị trí gần đúng của ${SC.displayName(u)} khi tự động chặn. Chỉ quản trị viên xem được. ` +
+        "Gửi yêu cầu kèm lý do, quản trị viên duyệt xong bạn sẽ nhận thông báo và xem được thông tin này." });
+    if (!ok) return;
+    await api("POST", "/api/trace-requests", { user_id: u.id, reason: ta.value });
+    SC.toast("Đã gửi yêu cầu truy vết tới quản trị viên", "ok");
+    await afterSocial();
+  });
   const openAppeal = guard(async (u) => {
     const ok = await SC.dialog({ title: "Khiếu nại gỡ chặn", icon: "🛡️", ok: "Bắt đầu khiếu nại",
       text: `Hai bên (bạn và ${SC.displayName(u)}) sẽ chụp ảnh trực tiếp bằng camera và xác nhận nhau là người thân / người quen. ` +

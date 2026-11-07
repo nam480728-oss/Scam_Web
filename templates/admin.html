@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% set hide_nav = true %}
+{% block title %}Quản trị · DangNam{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
+{% block content %}
+<main class="admin-page">
+  <header class="admin-head">
+    <div>
+      <h1>🛠️ Quản trị DangNam</h1>
+      <p class="muted">IP, vị trí và điểm uy tín <b>chỉ hiển thị ở trang này</b>. Người dùng chỉ thấy cảnh báo màu.</p>
+    </div>
+    <form method="post" action="{{ url_for('admin.admin_logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn" type="submit">Đăng xuất quản trị</button>
+    </form>
+  </header>
+
+  <nav class="admin-tabs" aria-label="Mục quản trị">
+    <a href="{{ url_for('admin.admin_page', tab='model') }}" class="{{ 'on' if tab == 'model' }}">🤖 Mô hình AI</a>
+    <a href="{{ url_for('admin.admin_page', tab='traces') }}" class="{{ 'on' if tab == 'traces' }}">🔎 Truy vết IP</a>
+    <a href="{{ url_for('admin.admin_page', tab='requests') }}" class="{{ 'on' if tab == 'requests' }}">📨 Yêu cầu truy vết
+      {% if pending_count %}<span class="count">{{ pending_count }}</span>{% endif %}</a>
+    <a href="{{ url_for('admin.admin_page', tab='reputation') }}" class="{{ 'on' if tab == 'reputation' }}">🛡️ Độ uy tín</a>
+  </nav>
+
+  {% if tab == 'model' %}
+  <section class="card pad">
+    <h2>⚡ {{ model.name }}</h2>
+    <p class="muted">{{ model.tagline }} · {{ model.kind }} · mô hình duy nhất của AI 3 · Đọc vị.</p>
+    <div class="kv">
+      <div><span>Trạng thái</span><b>
+        {% if model.ready %}<span class="pill ok">● Đã nạp{% if model.load_seconds %} ({{ model.load_seconds }} giây){% endif %}</span>
+        {% elif model.loading %}<span class="pill warn">Đang nạp…</span>
+        {% elif model.error %}<span class="pill danger">Lỗi – Vệ sĩ đang dùng chế độ dự phòng (mock)</span>
+        {% else %}<span class="pill">Chưa nạp (sẽ nạp ở tin nhắn đầu tiên)</span>{% endif %}</b></div>
+      <div><span>Lần train</span><b>{{ model.run or '–' }}</b></div>
+      <div><span>Dung lượng</span><b>{{ ('%.1f MB' % model.size_mb) if model.size_mb is not none else 'Không tìm thấy file' }}</b></div>
+      <div><span>macro-F1 (test)</span><b>{{ '%.1f%%' % (model.metrics.macro_f1 * 100) if model.metrics else '–' }}</b></div>
+      <div><span>Recall lừa đảo</span><b>{{ '%.1f%%' % (model.metrics.recall * 100) if model.metrics else '–' }}</b></div>
+      <div><span>Precision lừa đảo</span><b>{{ '%.1f%%' % (model.metrics.precision * 100) if model.metrics else '–' }}</b></div>
+    </div>
+    {% if model.error %}<p class="alert">{{ model.error }}</p>{% endif %}
+    <p class="muted small">File: <code>{{ model.path or '–' }}</code></p>
+  </section>
+
+  {% elif tab == 'traces' %}
+  <section class="card pad">
+    <h2>🔎 Hồ sơ truy vết IP</h2>
+    <p class="muted small">Tạo tự động khi Vệ sĩ chặn kẻ gửi tin lừa đảo lần 3. Vị trí là <b>gần đúng</b> (quốc gia / tỉnh-thành / nhà mạng).
+      IP của tin nhắn thường và nhật ký đăng nhập tự xóa sau {{ retention_days }} ngày; hồ sơ truy vết được giữ lâu dài.</p>
+    <form class="admin-filter" method="get">
+      <input type="hidden" name="tab" value="traces">
+      <input class="input sm" type="search" name="q" value="{{ q }}" placeholder="Lọc theo tài khoản, tên hoặc IP">
+      <button class="btn btn-sm btn-primary">Lọc</button>
+      <a class="btn btn-sm" href="{{ url_for('admin.traces_csv', q=q) }}">⬇️ Xuất CSV</a>
+    </form>
+    {% if not traces %}<p class="empty">Chưa có hồ sơ truy vết nào.</p>{% endif %}
+    <div class="table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>Thời gian</th><th>Kẻ gửi</th><th>Nạn nhân</th><th>IP</th><th>Vị trí gần đúng</th><th>Nhà mạng</th><th>Nguồn</th></tr></thead>
+      <tbody>
+      {% for t in traces %}
+        <tr>
+          <td>{{ t.created_at | vn_time }}{% if t.block_nth > 1 %}<br><small class="muted">chặn lần {{ t.block_nth }}</small>{% endif %}</td>
+          <td><b>{{ t.offender.name }}</b><br><small class="muted">@{{ t.offender.username }}</small></td>
+          <td>{{ t.victim.name }}<br><small class="muted">@{{ t.victim.username }}</small></td>
+          <td><code>{{ t.ip or '–' }}</code></td>
+          <td>{{ t.place }}</td>
+          <td>{{ t.isp or '–' }}</td>
+          <td><span class="pill {{ 'warn' if t.geo_source == 'demo' }}">{{ t.geo_label }}</span></td>
+        </tr>
+        <tr class="detail"><td colspan="7">
+          <details>
+            <summary>Chi tiết bằng chứng</summary>
+            <div class="evidence">
+              <div><b>Trình duyệt:</b> {{ t.user_agent or '–' }}</div>
+              <div><b>Các IP đã dùng:</b>
+                {% for x in t.evidence.ips or [] %}<span class="ip-chip"><code>{{ x.ip }}</code> {{ x.place }}</span>{% else %}–{% endfor %}</div>
+              <div><b>Tin bị gắn cờ:</b>
+                <ul>{% for m in t.evidence.messages or [] %}<li>{{ m.at | vn_time }} · <code>{{ m.ip or 'không có IP' }}</code> · mức {{ m.level }} · “{{ m.text }}”</li>{% endfor %}</ul></div>
+              <div><b>Đăng nhập gần đây:</b>
+                <ul>{% for l in t.evidence.logins or [] %}<li>{{ l.at | vn_time }} · <code>{{ l.ip or '–' }}</code></li>{% else %}<li>–</li>{% endfor %}</ul></div>
+            </div>
+          </details>
+        </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  {% elif tab == 'requests' %}
+  <section class="card pad">
+    <h2>📨 Yêu cầu thông tin truy vết</h2>
+    <p class="muted small">Nạn nhân (người được Vệ sĩ tự động chặn kẻ gian giúp) xin xem IP và vị trí gần đúng. Duyệt thì người đó chỉ xem được
+      hồ sơ của vụ liên quan tới mình (không có trình duyệt, không có ghi chú nội bộ).</p>
+    <form class="admin-filter" method="get">
+      <input type="hidden" name="tab" value="requests">
+      <select class="input sm" name="status" onchange="this.form.submit()">
+        {% for v, label in [('pending', 'Chờ duyệt'), ('approved', 'Đã duyệt'), ('rejected', 'Đã từ chối'), ('all', 'Tất cả')] %}
+        <option value="{{ v }}" {{ 'selected' if status == v }}>{{ label }}</option>{% endfor %}
+      </select>
+    </form>
+    {% if not requests %}<p class="empty">Không có yêu cầu nào.</p>{% endif %}
+    {% for r in requests %}
+    <article class="req-card st-{{ r.status }}">
+      <div class="req-head">
+        <b>{{ r.requester.name }}</b> <small class="muted">@{{ r.requester.username }}</small> xin truy vết
+        <b>{{ r.offender_name }}</b> <small class="muted">@{{ r.offender_username }}</small>
+        <span class="pill {{ {'pending': 'warn', 'approved': 'ok', 'rejected': 'danger'}[r.status] }}">
+          {{ {'pending': 'Chờ duyệt', 'approved': 'Đã duyệt', 'rejected': 'Đã từ chối'}[r.status] }}</span>
+      </div>
+      <p class="pre">“{{ r.reason }}”</p>
+      <p class="muted small">Gửi lúc {{ r.created_at | vn_time }} · Hồ sơ #{{ r.trace.id }}: <code>{{ r.trace.ip or '–' }}</code> · {{ r.trace.place }}
+        ({{ r.trace.geo_label }})</p>
+      {% if r.status == 'pending' %}
+      <form class="req-form" method="post" action="{{ url_for('admin.resolve_trace_request', rid=r.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input class="input sm" name="note" maxlength="500" placeholder="Ghi chú gửi người yêu cầu (không bắt buộc)">
+        <button class="btn btn-sm btn-primary" name="action" value="approve">✅ Duyệt</button>
+        <button class="btn btn-sm btn-danger" name="action" value="reject">❌ Từ chối</button>
+      </form>
+      {% else %}
+      <p class="small">Xử lý lúc {{ r.resolved_at | vn_time }}{% if r.admin_note %} · Ghi chú: {{ r.admin_note }}{% endif %}</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </section>
+
+  {% elif tab == 'reputation' %}
+  <section class="card pad">
+    <h2>🛡️ Độ uy tín người gửi lời mời kết bạn</h2>
+    <p class="muted small">Luật riêng, không ảnh hưởng tới AI 3. Điểm gốc <b>{{ rep_cfg.REPUTATION_BASE }}</b>, cộng/trừ theo 3 tiêu chí rồi giới hạn 0–100.
+      <span class="rep-badge rep-green">Đáng tin</span> ≥ {{ rep_cfg.REPUTATION_GREEN }} ·
+      <span class="rep-badge rep-yellow">Cân nhắc</span> {{ rep_cfg.REPUTATION_RED }}–{{ rep_cfg.REPUTATION_GREEN - 1 }} ·
+      <span class="rep-badge rep-red">Cảnh giác</span> &lt; {{ rep_cfg.REPUTATION_RED }}. Người dùng chỉ thấy màu.</p>
+    {% if not rep_rows %}<p class="empty">Chưa có lời mời kết bạn nào.</p>{% endif %}
+    <div class="table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>Người gửi → Người nhận</th><th>Lời mời</th><th>Điểm</th><th>Chi tiết cộng / trừ</th></tr></thead>
+      <tbody>
+      {% for row in rep_rows %}
+        <tr>
+          <td><b>{{ row.sender.name }}</b> <small class="muted">@{{ row.sender.username }}</small><br>→ {{ row.receiver.name }}
+            <small class="muted">@{{ row.receiver.username }}</small></td>
+          <td><span class="pill {{ 'warn' if row.status == 'pending' }}">{{ {'pending': 'Đang chờ', 'accepted': 'Đã chấp nhận', 'declined': 'Đã từ chối'}.get(row.status, row.status) }}</span>
+            <br><small class="muted">{{ row.created_at | vn_time }}</small></td>
+          <td><span class="rep-score rep-{{ row.rep.level }}">{{ row.rep.score }}</span></td>
+          <td><ul class="rep-items">
+            <li><span>Điểm gốc</span><b>{{ row.rep.base }}</b></li>
+            {% for it in row.rep['items'] %}<li><span>{{ it.text }}</span><b class="{{ 'plus' if it.points > 0 else ('minus' if it.points < 0 else '') }}">{{ '%+d' % it.points }}</b></li>{% endfor %}
+          </ul></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

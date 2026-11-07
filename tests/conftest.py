@@ -52,14 +52,14 @@ def clean(app):
     with app.app_context():
         db.session.remove()
         db.session.execute(db.text("SET FOREIGN_KEY_CHECKS=0"))
-        for t in ("appeal_captures", "appeals", "guardian_events", "feedback", "reports", "calls", "notifications", "message_reactions",
+        for t in ("trace_requests", "scam_traces", "login_logs", "appeal_captures", "appeals", "guardian_events", "feedback", "reports", "calls", "notifications", "message_reactions",
                   "post_comments", "post_reactions", "posts", "family_members", "avatar_history", "name_history",
                   "scam_counters", "messages", "conversations", "blocks", "friend_requests", "users",
                   "feed_posts", "feed_authors"):
             db.session.execute(db.text(f"TRUNCATE TABLE {t}"))
         db.session.execute(db.text("SET FOREIGN_KEY_CHECKS=1"))
         db.session.commit()
-    manager.set_predictor("svm", FakePredictor())
+    manager.set_predictor(FakePredictor())
     from services import realtime
     realtime._presence.clear()
     from services import call_service

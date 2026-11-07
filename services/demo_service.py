@@ -17,8 +17,8 @@ from flask import current_app
 
 from config import BASE_DIR
 from db.database import db, utcnow
-from db.models import (AvatarHistory, Call, Conversation, FamilyMember, Feedback, FriendRequest, GuardianEvent, Message,
-                       Notification, Report, ScamCounter, User)
+from db.models import (AvatarHistory, Call, Conversation, FamilyMember, Feedback, FriendRequest, GuardianEvent, LoginLog,
+                       Message, NameHistory, Notification, Report, ScamCounter, User)
 from services import profile_service as ps
 from services.realtime import socketio
 
@@ -114,7 +114,8 @@ def make_post_image(key: str, text: str, c1: str, c2: str) -> str:
 # --------------------------------------------------------------------------- #
 def ensure_user(model_key: str, username: str, name: str, *, days: int = 400, color: str = "#0f7b6c", bio: str | None = None,
                 birth_year: int | None = None, verified: bool = False, phone: bool = False, style: str | None = None,
-                is_demo: bool = True, avatar_key: str | None = None) -> User:
+                is_demo: bool = True, avatar_key: str | None = None, old_names: list[str] | None = None,
+                demo_ip: str | None = None) -> User:
     u = User.query.filter_by(model_key=model_key, username=username).first()
     if u is None:
         u = User(model_key=model_key, username=username, avatar_color=color)
@@ -130,7 +131,21 @@ def ensure_user(model_key: str, username: str, name: str, *, days: int = 400, co
     if u.avatar_path != rel:
         ps.set_avatar_from_path(u, rel, record=False)
         db.session.add(AvatarHistory(user_id=u.id, path=rel, changed_at=u.created_at))
+    # lich su doi ten (dung cho Do uy tin): ten cu[0] -> ten cu[1] -> ... -> ten hien tai, rai deu trong tuoi tai khoan
+    if old_names and not NameHistory.query.filter_by(user_id=u.id).first():
+        chain = list(old_names) + [name]
+        span = max(days, 1) * 24 * 60
+        for i in range(len(chain) - 1):
+            db.session.add(NameHistory(user_id=u.id, old_name=chain[i], new_name=chain[i + 1],
+                                       changed_at=u.created_at + timedelta(minutes=span * (i + 1) / len(chain))))
+    # IP demo (dai RFC 5737) cho trang truy vet cua quan tri vien
+    if demo_ip and not LoginLog.query.filter_by(user_id=u.id).first():
+        db.session.add(LoginLog(user_id=u.id, ip=demo_ip, user_agent="Demo browser", created_at=utcnow() - timedelta(hours=2)))
     return u
+
+
+def demo_ip(username: str) -> str | None:
+    return load()["actors"].get(username, {}).get("demo_ip")
 
 
 def befriend(a: User, b: User, days: int = 300):
@@ -160,7 +175,8 @@ def send(sender: User, receiver: User, text: str | None, *, days_ago: float | No
     conv = conversation(sender, receiver)
     when = utcnow() - timedelta(days=days_ago) if days_ago else utcnow()
     msg = Message(conversation_id=conv.id, sender_id=sender.id, kind="text", body=text or None,
-                  created_at=when, delivered_at=when, scan_status="pending" if process else "none")
+                  created_at=when, delivered_at=when, scan_status="pending" if process else "none",
+                  sender_ip=demo_ip(sender.username), sender_user_agent="Demo browser" if demo_ip(sender.username) else None)
     if file_bytes is not None:
         import uuid
         ext = file_name.rsplit(".", 1)[-1].lower()

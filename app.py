@@ -8,19 +8,12 @@ import logging
 import mimetypes
 import os
 
-# Windows: phai nap torch TRUOC scikit-learn/numpy-MKL, neu khong torch bao WinError 1114 (c10.dll) khi
-# quan tri doi tu SVM sang PhoBERT/ViSoBERT.
-try:
-    import torch  # noqa: F401
-except Exception:  # noqa: BLE001 - may khong co torch: SVM van chay
-    pass
-
 import click
 from flask import Flask, jsonify, redirect, request, url_for
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFError, CSRFProtect
 
-from config import Config
+from config import MODEL_KEY, Config
 from db.database import db, migrate
 from db.models import User
 from services.chat_service import ChatError
@@ -49,26 +42,27 @@ def create_app(config: dict | None = None) -> Flask:
     login_manager.login_view = "auth.login"
     socketio.init_app(app, async_mode="threading", manage_session=False)
 
-    from routes import appeal, auth, call, chat, feed, friends, guardian, models, settings, social
+    from routes import admin, appeal, auth, call, chat, feed, friends, guardian, settings, social, trace
     from services import view_helpers
     from services.ai_client import manager
-    app.jinja_env.globals["ai_name"] = lambda: manager.active_name() or "Chưa chọn"
+    app.jinja_env.globals["ai_name"] = manager.active_name
     view_helpers.register(app)
-    for module in (models, auth, feed, chat, friends, social, settings, guardian, call, appeal):
+    for module in (admin, auth, feed, chat, friends, social, settings, guardian, call, appeal, trace):
         app.register_blueprint(module.bp)
     init_socket_events(app)
     from agents import orchestrator
-    from services import call_service
+    from services import call_service, trace_service
     call_service.init(app)
+    trace_service.init(app)
+    if app.config.get("TRUST_PROXY"):                   # chay sau proxy: lay IP that tu X-Forwarded-For
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
     orchestrator.init(app)
 
     @login_manager.user_loader
     def load_user(user_id: str):
-        # Tai khoan chi hop le trong dung "the gioi" cua mo hinh dang hoat dong; doi mo hinh -> bi dang xuat.
         user = db.session.get(User, int(user_id))
-        return user if user is not None and user.model_key == manager.active else None
-
-    manager.on_change = lambda key: socketio.emit("system:model_changed", {"model": key})
+        return user if user is not None and user.model_key == MODEL_KEY else None
 
     @login_manager.unauthorized_handler
     def unauthorized():
@@ -132,5 +126,7 @@ if __name__ == "__main__":
     # Demo qua mang LAN: trinh duyet chi cho dung camera/micro tren localhost hoac HTTPS
     # -> dat HOST=0.0.0.0 va SSL_ADHOC=true (chung chi tu ky, can thu vien cryptography).
     ssl = "adhoc" if os.getenv("SSL_ADHOC", "false").lower() == "true" else None
+    from services.ai_client import manager
+    manager.preload()                                    # nap mo hinh AI 3 (TF-IDF + SVM) o luong nen
     socketio.run(app, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")), debug=False,
                  allow_unsafe_werkzeug=True, ssl_context=ssl)

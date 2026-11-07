@@ -81,28 +81,6 @@ input, textarea { font: inherit; }
 .dialog.danger { border-top: 6px solid var(--red); }
 .dialog .big-icon { font-size: 54px; text-align: center; margin-bottom: 6px; }
 
-/* ---------- trang chọn mô hình ---------- */
-.select-page { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 16px;
-  background: radial-gradient(1200px 600px at 50% -10%, color-mix(in srgb, var(--primary) 22%, transparent) 0, transparent 60%), var(--bg); }
-.select-page h1 { margin: 0 0 6px; font-size: 34px; text-align: center; }
-.select-page .sub { color: var(--muted); margin: 0 0 34px; text-align: center; max-width: 620px; }
-.cards { display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; }
-.model-card { position: relative; display: flex; flex-direction: column; width: 300px; background: var(--card); border: 2px solid transparent; border-radius: 18px; padding: 26px 22px 22px;
-  box-shadow: var(--shadow); text-align: center; transition: transform .18s, box-shadow .18s, border-color .18s; cursor: pointer; }
-.model-card:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(0,0,0,.16); border-color: var(--c, var(--primary)); }
-.model-card.disabled { opacity: .55; pointer-events: none; }
-.model-card .icon { width: 74px; height: 74px; margin: 0 auto 14px; border-radius: 20px; display: grid; place-items: center; font-size: 38px; background: color-mix(in srgb, var(--c) 14%, var(--card)); }
-.model-card h2 { margin: 0 0 4px; font-size: 21px; } .model-card .tag { color: var(--muted); margin: 0 0 12px; min-height: 40px; }
-.model-card .kind { align-self: center; display: inline-block; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--hover); color: var(--muted); margin-bottom: 14px; }
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 16px; }
-.stat { background: var(--bg); border-radius: 10px; padding: 8px 4px; } .stat b { display: block; font-size: 16px; } .stat span { font-size: 11px; color: var(--muted); }
-.model-card .pick { margin-top: auto; width: 100%; padding: 11px; border-radius: 10px; border: 0; font-weight: 700; color: #fff; background: var(--c, var(--primary)); }
-.active-tag { align-self: center; margin: -8px 0 10px; background: var(--ok-bg); color: var(--ok-text); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
-.loading-box { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(4px); z-index: 100; display: grid; place-items: center; text-align: center; }
-.spinner { width: 54px; height: 54px; border-radius: 50%; border: 5px solid var(--line); border-top-color: var(--primary); animation: spin 0.9s linear infinite; margin: 0 auto 16px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.error-box { background: var(--red-bg); color: var(--red-deep); border: 1px solid var(--red-line); border-radius: 10px; padding: 10px 14px; margin-top: 18px; max-width: 640px; }
-
 /* ---------- đăng nhập / đăng ký ---------- */
 .auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(900px 500px at 20% 0, color-mix(in srgb, var(--primary) 20%, transparent) 0, transparent 60%), var(--bg); }
 .auth-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 56px; align-items: center; width: min(980px, 100%); }

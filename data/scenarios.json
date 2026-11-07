@@ -1,6 +1,51 @@
 {
   "_ghi_chu": "Kich ban demo CHI CO TIN NHAN. Moi STK / SDT / ten mien deu GIA. Tai khoan demo: mat khau chung 'demo123'. setup: chay khi seed va khi bam 'Lam moi'. steps: phat truc tiep tren /demo (cach nhau 2-3 giay). Luat 3 lan (chi dua vao AI 3): moi tin bi AI 3 gan co tang 1 lan cho nguoi gui trong cuoc chat: lan 1 canh bao (van hien tin), lan 2 che tin + chan tai APK, lan 3 tu dong chan (go chan qua Khieu nai; thanh cong thi dem lai tu dau).",
   "password": "demo123",
+  "demo_ip_geo": {
+    "_ghi_chu": "IP DEMO: dai 192.0.2.x / 198.51.100.x / 203.0.113.x danh rieng cho tai lieu (RFC 5737), khong phai IP that cua ai.",
+    "192.0.2.10": {
+      "country": "Việt Nam",
+      "region": "Hà Nội",
+      "city": "Cầu Giấy",
+      "isp": "Nhà mạng demo A"
+    },
+    "203.0.113.24": {
+      "country": "Việt Nam",
+      "region": "TP. Hồ Chí Minh",
+      "city": "Quận 7",
+      "isp": "Nhà mạng demo B"
+    },
+    "198.51.100.7": {
+      "country": "Campuchia",
+      "region": "Phnom Penh",
+      "city": "Phnom Penh",
+      "isp": "Nhà mạng demo C"
+    },
+    "203.0.113.88": {
+      "country": "Việt Nam",
+      "region": "Bình Dương",
+      "city": "Thủ Dầu Một",
+      "isp": "Nhà mạng demo A"
+    },
+    "198.51.100.45": {
+      "country": "Campuchia",
+      "region": "Sihanoukville",
+      "city": "Sihanoukville",
+      "isp": "Nhà mạng demo C"
+    },
+    "203.0.113.150": {
+      "country": "Myanmar",
+      "region": "Shan",
+      "city": "Myawaddy",
+      "isp": "Nhà mạng demo D"
+    },
+    "198.51.100.120": {
+      "country": "Việt Nam",
+      "region": "Đà Nẵng",
+      "city": "Hải Châu",
+      "isp": "Nhà mạng demo B"
+    }
+  },
   "actors": {
     "balan": {
       "name": "Trần Thị Lan",
@@ -21,7 +66,8 @@
       "phone": true,
       "color": "#7b3fe4",
       "role": "Con gái THẬT của Bà Lan",
-      "avatar_style": "ha"
+      "avatar_style": "ha",
+      "demo_ip": "192.0.2.10"
     },
     "nguyenthuha.2025": {
       "name": "Nguyễn Thu Hà",
@@ -29,7 +75,9 @@
       "color": "#7b3fe4",
       "role": "Kẻ gian · giả làm Thu Hà (tài khoản mới, cùng ảnh)",
       "avatar_style": "ha",
-      "scammer": true
+      "scammer": true,
+      "demo_ip": "203.0.113.24",
+      "old_names": ["Hà Nguyễn", "Thu Hà Official"]
     },
     "ongminh": {
       "name": "Lê Văn Minh",
@@ -45,21 +93,27 @@
       "days": 2,
       "color": "#1c3d7a",
       "role": "Kẻ gian · giả công an + gửi APK",
-      "scammer": true
+      "scammer": true,
+      "demo_ip": "198.51.100.7",
+      "old_names": ["Minh Quân", "Đội Điều Tra", "Công An Phường"]
     },
     "evn.cskh": {
       "name": "EVN CSKH",
       "days": 3,
       "color": "#f08c00",
       "role": "Kẻ gian · giả điện lực + link nhái",
-      "scammer": true
+      "scammer": true,
+      "demo_ip": "203.0.113.88",
+      "old_names": ["Điện Lực Miền Bắc"]
     },
     "tuyendung.online": {
       "name": "Tuyển Dụng Online 24h",
       "days": 2,
       "color": "#2e9e5b",
       "role": "Kẻ gian · việc nhẹ lương cao (rải tin)",
-      "scammer": true
+      "scammer": true,
+      "demo_ip": "198.51.100.45",
+      "old_names": ["Shop Quần Áo", "Việc Làm Thêm", "Tuyển CTV", "Kiếm Tiền Online", "HR Tuyển Dụng"]
     },
     "anhtuan": {
       "name": "Phạm Anh Tuấn",
@@ -75,7 +129,9 @@
       "days": 14,
       "color": "#c2255c",
       "role": "Kẻ gian · sàn tiền ảo 'nuôi' 10 ngày",
-      "scammer": true
+      "scammer": true,
+      "demo_ip": "203.0.113.150",
+      "old_names": ["Hương Nguyễn", "Hương Crypto", "Chuyên Gia Đầu Tư"]
     },
     "chilinh": {
       "name": "Đỗ Chi Linh",
@@ -91,7 +147,9 @@
       "days": 4,
       "color": "#495057",
       "role": "Kẻ gian · giả shipper đòi phí ship",
-      "scammer": true
+      "scammer": true,
+      "demo_ip": "198.51.100.120",
+      "old_names": ["Giao Hàng Tiết Kiệm", "Shipper 24h"]
     },
     "minhanh": {
       "name": "Minh Anh",

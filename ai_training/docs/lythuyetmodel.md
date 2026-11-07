@@ -1,7 +1,7 @@
 # Lý thuyết mô hình TF-IDF + Linear SVM
 
 Tài liệu giải thích **nền tảng lý thuyết** và **cách áp dụng cụ thể trong dự án DangNam** của mô hình TF-IDF + Linear SVM
-(một trong 3 mô hình của **AI 3 · Đọc vị**, cùng PhoBERT và ViSoBERT).
+(mô hình duy nhất của **AI 3 · Đọc vị**).
 
 | | **TF-IDF + Linear SVM** |
 | --- | --- |

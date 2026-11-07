@@ -8,7 +8,7 @@ from sqlalchemy import func
 from agents import orchestrator
 from db.database import db, utcnow
 from db.models import Appeal, Block, Feedback, GuardianEvent, Message, User
-from routes import login_required_api, model_required
+from routes import login_required_api
 from services import chat_service as cs
 from services import guard_view
 
@@ -29,7 +29,6 @@ def _int(v):
 # --------------------------------------------------------------------------- #
 @bp.post("/api/guardian/report")
 @login_required_api
-@model_required
 def report():
     """Bao cao lua dao: CHI luu lai lam nhan train (khong canh bao nguoi khac, khong danh sach den)."""
     data = request.get_json(silent=True) or {}
@@ -48,7 +47,6 @@ def report():
 
 @bp.post("/api/guardian/feedback")
 @login_required_api
-@model_required
 def feedback():
     data = request.get_json(silent=True) or {}
     label, mid = data.get("label"), _int(data.get("message_id"))
@@ -66,7 +64,6 @@ def feedback():
 
 @bp.get("/api/guardian/messages/<int:mid>")
 @login_required_api
-@model_required
 def why(mid: int):
     d = guard_view.message_detail(mid, current_user.id)
     if d is None:
@@ -76,7 +73,6 @@ def why(mid: int):
 
 @bp.post("/api/guardian/ask")
 @login_required_api
-@model_required
 def ask():
     data = request.get_json(silent=True) or {}
     text, cid = data.get("text"), _int(data.get("conversation_id"))
@@ -87,7 +83,6 @@ def ask():
 
 @bp.post("/api/guardian/family-check")
 @login_required_api
-@model_required
 def family_check():
     """Kiem tra cau tra loi Mat ma gia dinh cua doi phuong (tin moi nhat cua ho) - so voi dap an da ma hoa."""
     from werkzeug.security import check_password_hash
@@ -109,7 +104,6 @@ def family_check():
 # Bang dieu khien Ve si
 # --------------------------------------------------------------------------- #
 @bp.get("/guardian")
-@model_required
 @login_required
 def dashboard():
     return render_template("guardian.html")
@@ -117,7 +111,6 @@ def dashboard():
 
 @bp.get("/api/guardian/events")
 @login_required_api
-@model_required
 def events():
     limit = min(max(request.args.get("limit", 40, type=int), 1), 200)
     rows = (GuardianEvent.query.filter_by(model_key=current_user.model_key).order_by(GuardianEvent.id.desc())
@@ -127,7 +120,6 @@ def events():
 
 @bp.get("/api/guardian/stats")
 @login_required_api
-@model_required
 def stats():
     mk = current_user.model_key
     msg_q = GuardianEvent.query.filter(GuardianEvent.model_key == mk, GuardianEvent.kind == "message")
@@ -161,7 +153,6 @@ def stats():
 # Trinh dien
 # --------------------------------------------------------------------------- #
 @bp.get("/demo")
-@model_required
 @login_required
 def demo_page():
     from services import demo_service as ds
@@ -181,7 +172,6 @@ def _scenario_dto(sc: dict) -> dict:
 
 @bp.get("/api/demo/scenarios")
 @login_required_api
-@model_required
 def demo_scenarios():
     from services import demo_service as ds
     seeded = ds.resolve(current_user.model_key, "balan") is not None
@@ -190,7 +180,6 @@ def demo_scenarios():
 
 @bp.post("/api/demo/play/<sid>")
 @login_required_api
-@model_required
 def demo_play(sid: str):
     from flask import current_app
     from services import demo_service as ds
@@ -208,7 +197,6 @@ def demo_play(sid: str):
 
 @bp.post("/api/demo/reset/<sid>")
 @login_required_api
-@model_required
 def demo_reset(sid: str):
     from services import demo_service as ds
     try:
@@ -220,7 +208,6 @@ def demo_reset(sid: str):
 
 @bp.post("/api/demo/agents/<sid>")
 @login_required_api
-@model_required
 def demo_agents(sid: str):
     """Cong tac bat/tat AI 3 cua NAN NHAN trong kich ban (so sanh truoc / sau)."""
     from services import demo_service as ds
@@ -236,7 +223,6 @@ def demo_agents(sid: str):
 
 
 @bp.post("/demo/login/<username>")
-@model_required
 def demo_login(username: str):
     """Dang nhap nhanh vao tai khoan DEMO (chi tai khoan is_demo cua the gioi mo hinh hien tai)."""
     from flask import current_app, redirect, url_for

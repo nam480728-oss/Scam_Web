@@ -6,7 +6,7 @@ from flask_login import current_user, login_required
 
 from db.database import db
 from db.models import Message
-from routes import login_required_api, model_required
+from routes import login_required_api
 from services import chat_service as cs
 from services.ai_client import manager
 
@@ -15,7 +15,6 @@ bp = Blueprint("chat", __name__)
 
 @bp.get("/messages")
 @bp.get("/messages/<int:cid>")
-@model_required
 @login_required
 def messages_page(cid: int | None = None):
     return render_template("chat.html", initial_cid=cid)
@@ -33,14 +32,12 @@ def summary():
 
 @bp.get("/api/conversations")
 @login_required_api
-@model_required
 def conversations():
     return jsonify(conversations=cs.list_conversations(current_user.id))
 
 
 @bp.post("/api/conversations")
 @login_required_api
-@model_required
 def open_conversation():
     data = request.get_json(silent=True) or {}
     uid = data.get("user_id")
@@ -52,7 +49,6 @@ def open_conversation():
 
 @bp.get("/api/conversations/<int:cid>")
 @login_required_api
-@model_required
 def conversation_detail(cid: int):
     conv = cs.get_conversation(cid, current_user.id)
     return jsonify(conversation=cs.conversation_dto(conv, current_user.id))
@@ -60,7 +56,6 @@ def conversation_detail(cid: int):
 
 @bp.get("/api/conversations/<int:cid>/messages")
 @login_required_api
-@model_required
 def conversation_messages(cid: int):
     conv = cs.get_conversation(cid, current_user.id)
     before = request.args.get("before", type=int)
@@ -70,7 +65,6 @@ def conversation_messages(cid: int):
 
 @bp.post("/api/conversations/<int:cid>/messages")
 @login_required_api
-@model_required
 def post_message(cid: int):
     conv = cs.get_conversation(cid, current_user.id)
     voice = duration = None
@@ -91,14 +85,12 @@ def post_message(cid: int):
 
 @bp.post("/api/messages/<int:mid>/recall")
 @login_required_api
-@model_required
 def recall(mid: int):
     return jsonify(message=cs.recall_message(cs.get_message(mid, current_user.id), current_user.id))
 
 
 @bp.post("/api/messages/<int:mid>/react")
 @login_required_api
-@model_required
 def react(mid: int):
     emoji = (request.get_json(silent=True) or {}).get("emoji")
     if emoji is not None and not isinstance(emoji, str):
@@ -108,7 +100,6 @@ def react(mid: int):
 
 @bp.post("/api/messages/<int:mid>/pin")
 @login_required_api
-@model_required
 def pin(mid: int):
     on = (request.get_json(silent=True) or {}).get("pinned", True)
     if not isinstance(on, bool):
@@ -118,7 +109,6 @@ def pin(mid: int):
 
 @bp.get("/api/conversations/<int:cid>/search")
 @login_required_api
-@model_required
 def search(cid: int):
     conv = cs.get_conversation(cid, current_user.id)
     return jsonify(results=cs.search_messages(conv, current_user.id, request.args.get("q", "")[:100]))
@@ -126,7 +116,6 @@ def search(cid: int):
 
 @bp.get("/api/conversations/<int:cid>/media")
 @login_required_api
-@model_required
 def media(cid: int):
     conv = cs.get_conversation(cid, current_user.id)
     return jsonify(items=cs.media(conv, current_user.id, request.args.get("kind", "images")))

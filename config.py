@@ -1,4 +1,4 @@
-"""Cau hinh ung dung SafeChat (chat co AI canh bao lua dao)."""
+"""Cau hinh ung dung DangNam (mang xa hoi co Ve si AI canh bao lua dao)."""
 import glob
 import os
 from pathlib import Path
@@ -17,29 +17,18 @@ def _latest_run(pattern: str) -> Path | None:
     return Path(runs[-1]) if runs else None
 
 
-# Moi mo hinh: key -> thong tin hien thi + duong dan (co the ghi de bang bien moi truong trong .env)
+# AI 3 chi con 1 mo hinh: TF-IDF + Linear SVM. Cot users.model_key luon = MODEL_KEY.
+MODEL_KEY = "svm"
+
+
 def model_specs() -> dict[str, dict]:
     svm_run = _latest_run("IDF_SVM/outputs/tfidf_linear_svm_2*")
-    pho_run = _latest_run("phobert/outputs/phobert_base_v2_2*")
-    viso_run = _latest_run("VISO/outputs/visobert_2*")
     return {
-        "svm": {
-            "key": "svm", "name": "TF-IDF + Linear SVM", "tagline": "Nhẹ, nhanh, giải thích được",
+        MODEL_KEY: {
+            "key": MODEL_KEY, "name": "TF-IDF + Linear SVM", "tagline": "Nhẹ, nhanh, giải thích được",
             "kind": "Học máy cổ điển", "run": svm_run,
             "path": Path(os.getenv("MODEL_SVM_PATH", svm_run / "model" / "tfidf_svm.joblib")) if svm_run else None,
             "icon": "⚡", "color": "#1b74e4",
-        },
-        "phobert": {
-            "key": "phobert", "name": "PhoBERT-base-v2", "tagline": "Mô hình ngôn ngữ tiếng Việt (VinAI)",
-            "kind": "Transformer · tách từ pyvi", "run": pho_run,
-            "path": Path(os.getenv("MODEL_PHOBERT_PATH", pho_run / "best_model")) if pho_run else None,
-            "icon": "🧠", "color": "#7b3fe4",
-        },
-        "viso": {
-            "key": "viso", "name": "ViSoBERT", "tagline": "Mô hình cho văn bản mạng xã hội tiếng Việt",
-            "kind": "Transformer · SentencePiece", "run": viso_run,
-            "path": Path(os.getenv("MODEL_VISO_PATH", viso_run / "best_model")) if viso_run else None,
-            "icon": "💬", "color": "#e4572e",
         },
     }
 
@@ -63,7 +52,6 @@ class Config:
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")   # mat khau trang quan tri (doi mo hinh AI)
 
     MAX_MESSAGE_LEN = 2000
-    AI_THRESHOLD = float(os.getenv("AI_THRESHOLD", "0.5"))   # dung cho PhoBERT/ViSoBERT (xac suat >= nguong)
     PAGE_SIZE = 40
 
     # ---- tai len (anh dai dien / anh bia / anh bai dang: cong khai trong app) ----
@@ -82,6 +70,26 @@ class Config:
     AGENT3_URL = os.getenv("AGENT3_URL", "")
     AGENT3_TIMEOUT = float(os.getenv("AGENT3_TIMEOUT", "15"))
     AGENT3_MODULE = os.getenv("AGENT3_MODULE", "")         # vd my_model.infer:analyze
+
+    # ---- Do uy tin nguoi gui loi moi ket ban (luat rieng, KHONG anh huong AI 3 / luat 3 lan) ----
+    REPUTATION_BASE = 70                                   # diem goc, cong/tru roi kep 0..100
+    REPUTATION_GREEN = 80                                  # >= : xanh (dang tin)
+    REPUTATION_RED = 50                                    # <  : do (canh giac); con lai: vang
+    # (so ngay toi da, diem) - tuoi tai khoan; bac cuoi la "lon hon moc truoc"
+    REPUTATION_AGE_STEPS = [(1, -25), (7, -15), (30, -5), (180, 5), (365, 10), (None, 20)]
+    # (so ban chung toi da, diem)
+    REPUTATION_MUTUAL_STEPS = [(0, -10), (2, 0), (5, 10), (10, 15), (None, 20)]
+    # (so lan doi ten toi da, diem)
+    REPUTATION_RENAME_STEPS = [(0, 5), (1, 0), (2, -5), (4, -15), (None, -25)]
+
+    # ---- Truy vet IP (chi quan tri vien xem) ----
+    TRUST_PROXY = os.getenv("TRUST_PROXY", "false").lower() == "true"   # chi tin X-Forwarded-For khi chay sau proxy
+    IP_RETENTION_DAYS = int(os.getenv("IP_RETENTION_DAYS", "30"))      # IP tin nhan / dang nhap tu xoa sau N ngay
+    GEOIP_DB_PATH = os.getenv("GEOIP_DB_PATH", "")         # file .mmdb (DB-IP Lite / GeoLite2 City) - tra cuu offline
+    GEOIP_ONLINE = os.getenv("GEOIP_ONLINE", "false").lower() == "true"  # goi ip-api.com khi khong co file .mmdb
+    GEOIP_ONLINE_URL = os.getenv("GEOIP_ONLINE_URL",
+                                 "http://ip-api.com/json/{ip}?fields=status,message,country,regionName,city,isp")
+    GEOIP_TIMEOUT = float(os.getenv("GEOIP_TIMEOUT", "3"))
 
     # ---- Demo ----
     DEMO_QUICK_LOGIN = os.getenv("DEMO_QUICK_LOGIN", "true").lower() == "true"   # nut dang nhap nhanh tai khoan demo
