@@ -6,9 +6,14 @@ Flask-WTF>=1.2
 Flask-SocketIO>=5.3
 simple-websocket>=1.0
 PyMySQL>=1.1
-cryptography
+cryptography          # MySQL + chung chi HTTPS tu ky (SSL_ADHOC) khi demo qua LAN
 python-dotenv
-# --- AI (3 mo hinh) ---
+requests
+# --- Ve si: tien xu ly van ban + anh ---
+Pillow
+Unidecode
+opencv-python         # dem khuon mat khi chup anh khieu nai go chan (Haar cascade, chay CPU)
+# --- AI 3 (3 mo hinh da train trong ai_training/) ---
 scikit-learn==1.5.0
 joblib
 numpy
@@ -17,3 +22,5 @@ torch          # ban CUDA: pip install torch --index-url https://download.pytorc
 transformers>=4.40
 sentencepiece
 pyvi
+# --- kiem thu ---
+pytest

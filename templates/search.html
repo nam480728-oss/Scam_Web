@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Tìm kiếm · DangNam{% endblock %}
+{% block content %}
+<main class="page-wide">
+  <section class="card pad">
+    <h2>{% if q %}Kết quả tìm kiếm cho “{{ q }}”{% else %}Tìm kiếm người dùng{% endif %}</h2>
+    <form class="form-row" method="get"><input class="input" type="search" name="q" value="{{ q }}" placeholder="Nhập tên, có dấu hoặc không dấu" autofocus><button class="btn btn-primary">Tìm</button></form>
+    <div class="person-grid" id="search-results"></div>
+    <script type="application/json" id="search-data">{{ results | tojson }}</script>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/social.js') }}"></script>{% endblock %}

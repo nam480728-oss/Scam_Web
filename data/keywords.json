@@ -1,0 +1,60 @@
+{
+  "_ghi_chu": "Tu khoa tin hieu theo nhom, so tren ban KHONG DAU, chu thuong (sau khi doi teencode). weight dung cho che do mock cua Agent 3 va luat pheu. pressure=true: nhom 'gay ap luc' (dung de hieu chinh diem AI 3 theo ngu canh).",
+  "groups": {
+    "money_request": {
+      "label": "Yêu cầu chuyển tiền",
+      "weight": 0.25, "pressure": false,
+      "phrases": ["chuyen khoan", "chuyen tien", "chuyen giup", "chuyen vao", "chuyen cho", "gui tien", "nap tien", "nap them", "dong phi", "dong tien", "nop phi", "nop tien", "phi ship", "phi van chuyen", "so tai khoan", "ung truoc", "vay tien", "muon tien", "cho vay", "dat coc", "coc truoc", "thanh toan", "trieu", "tien coc", "rut tien"]
+    },
+    "otp": {
+      "label": "Đòi mã OTP / mật khẩu",
+      "weight": 0.35, "pressure": true,
+      "phrases": ["otp", "ma xac thuc", "ma xac nhan", "ma kich hoat", "doc ma", "gui ma", "mat khau", "ma pin"]
+    },
+    "cccd": {
+      "label": "Đòi giấy tờ tùy thân",
+      "weight": 0.25, "pressure": true,
+      "phrases": ["can cuoc", "chung minh nhan dan", "chup 2 mat", "chup hai mat", "dinh danh", "xac minh cong dan", "xac minh danh tinh"]
+    },
+    "authority": {
+      "label": "Mạo danh cơ quan / tổ chức",
+      "weight": 0.25, "pressure": true,
+      "phrases": ["cong an", "vien kiem sat", "toa an", "can bo", "co quan dieu tra", "dien luc", "evn", "cskh", "cham soc khach hang", "cuc thue", "bao hiem xa hoi", "buu dien", "ngan hang nha nuoc", "bo cong an"]
+    },
+    "urgency": {
+      "label": "Thúc giục, đe dọa khẩn cấp",
+      "weight": 0.2, "pressure": true,
+      "phrases": ["khan cap", "gap lam", "can gap", "ngay lap tuc", "ngay bay gio", "trong 2h", "trong 2 gio", "trong vong", "het han", "bi khoa", "cat dien", "truy na", "bat giam", "rua tien", "dang ket", "tai nan", "cap cuu", "nhap vien", "no cuoc", "qua han"]
+    },
+    "secrecy": {
+      "label": "Đòi giữ bí mật",
+      "weight": 0.3, "pressure": true,
+      "phrases": ["dung noi", "giu bi mat", "khong duoc noi", "dung bao", "bi mat", "dung ke", "khong ai biet"]
+    },
+    "channel_switch": {
+      "label": "Kéo sang kênh khác (Zalo / Telegram)",
+      "weight": 0.15, "pressure": true,
+      "phrases": ["zalo", "telegram", "nhan tin rieng", "ket ban zalo", "add zalo", "nhan tin zalo", "whatsapp"]
+    },
+    "install_app": {
+      "label": "Yêu cầu cài ứng dụng",
+      "weight": 0.35, "pressure": true,
+      "phrases": ["cai app", "cai dat ung dung", "tai ung dung", "tai app", "cai ung dung", ".apk", "cai phan mem", "link tai", "ung dung xac minh"]
+    },
+    "high_profit": {
+      "label": "Hứa lợi nhuận / việc nhẹ lương cao",
+      "weight": 0.25, "pressure": true,
+      "phrases": ["loi nhuan", "hoa hong", "viec nhe", "luong cao", "thu nhap", "dau tu", "san giao dich", "coin", "x2 tai khoan", "lai suat", "lai 1", "lai 2", "lai 3", "lai 4", "lai 5", "lai 6", "lai 7", "lai 8", "lai 9", "lam nhiem vu", "nhiem vu", "cong tac vien", "tien ao", "usdt"]
+    },
+    "prize": {
+      "label": "Trúng thưởng / quà tặng",
+      "weight": 0.2, "pressure": true,
+      "phrases": ["trung thuong", "qua tang", "nhan thuong", "tri an khach hang", "phan thuong"]
+    },
+    "refund": {
+      "label": "Hứa lấy lại tiền đã mất",
+      "weight": 0.25, "pressure": true,
+      "phrases": ["lay lai tien", "thu hoi tien", "ho tro lay lai", "hoan tien"]
+    }
+  }
+}

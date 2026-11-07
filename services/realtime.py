@@ -63,9 +63,76 @@ def init_socket_events(app):
     @socketio.on("disconnect")
     def on_disconnect(*args):
         uid = current_user.id if current_user.is_authenticated else None
-        if uid is not None and _unregister(uid, request.sid):
+        if uid is None:
+            return
+        with app.app_context():
+            from services import call_service
+            call_service.on_disconnect(uid, request.sid)
+        if _unregister(uid, request.sid):
             with app.app_context():
                 cs.on_user_offline(uid)
+
+    @socketio.on("guardian:join")
+    def guardian_join(data=None):
+        """Trang /guardian va /demo nhan dong su kien Ve si cua 'the gioi' mo hinh hien tai."""
+        if current_user.is_authenticated:
+            join_room(f"guardian:{current_user.model_key}")
+            return {"ok": True}
+        return {"error": "auth"}
+
+    # ------------------------------------------------------------------ cuoc goi (signaling WebRTC)
+    def _call_handler(fn):
+        def wrapper(data=None):
+            if not current_user.is_authenticated or not isinstance(data, dict):
+                return {"error": "Yêu cầu không hợp lệ."}
+            from services import call_service
+            with app.app_context():
+                try:
+                    return fn(current_user._get_current_object(), data, call_service) or {"ok": True}
+                except call_service.CallError as e:
+                    return {"error": str(e)}
+                except cs.ChatError as e:
+                    return {"error": e.message}
+        wrapper.__name__ = fn.__name__
+        return wrapper
+
+    @socketio.on("call:start")
+    @_call_handler
+    def call_start(me, data, svc):
+        cid = data.get("conversation_id")
+        if not isinstance(cid, int):
+            return {"error": "Thiếu cuộc trò chuyện."}
+        call = svc.start(me, cid, bool(data.get("video")), request.sid)
+        return {"ok": True, "call": svc.call_dto(call, me.id)}
+
+    @socketio.on("call:attach")
+    @_call_handler
+    def call_attach(me, data, svc):
+        call = svc.get_call(data.get("call_id"), me.id)
+        svc.attach(call, me.id, request.sid)
+        return {"ok": True, "call": svc.call_dto(call, me.id)}
+
+    @socketio.on("call:accept")
+    @_call_handler
+    def call_accept(me, data, svc):
+        call = svc.get_call(data.get("call_id"), me.id)
+        svc.accept(call, me, request.sid)
+        return {"ok": True, "call": svc.call_dto(call, me.id)}
+
+    @socketio.on("call:decline")
+    @_call_handler
+    def call_decline(me, data, svc):
+        svc.decline(svc.get_call(data.get("call_id"), me.id), me)
+
+    @socketio.on("call:end")
+    @_call_handler
+    def call_end(me, data, svc):
+        svc.finish(svc.get_call(data.get("call_id"), me.id), "ended")
+
+    @socketio.on("call:signal")
+    @_call_handler
+    def call_signal(me, data, svc):
+        svc.relay_signal(svc.get_call(data.get("call_id"), me.id), me.id, data.get("data"))
 
     @socketio.on("typing")
     def on_typing(data):

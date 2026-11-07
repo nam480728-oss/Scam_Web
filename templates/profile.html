@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ user.name }} · DangNam{% endblock %}
+{% block content %}
+<main class="profile-page" id="profile-page">
+  <section class="profile-hero card">
+    <div class="cover" id="cover" {% if user.cover_path %}style="background-image:url('/static/uploads/{{ user.cover_path }}')"{% endif %}>
+      {% if data.is_me %}<label class="btn btn-sm cover-btn">📷 Đổi ảnh bìa<input type="file" id="cover-input" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>{% endif %}
+    </div>
+    <div class="hero-row">
+      <div class="hero-avatar">
+        <span id="hero-avatar">{{ avatar_html(user, 'hero') }}</span>
+        {% if data.is_me %}<label class="avatar-btn" title="Đổi ảnh đại diện">📷<input type="file" id="avatar-input" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>{% endif %}
+      </div>
+      <div class="hero-info">
+        <h1 id="hero-name">{{ user.name }}{% if user.identity_verified %}<span class="vbadge lg" title="Đã xác minh danh tính">✔</span>{% endif %}</h1>
+        <div class="muted">@{{ user.username }} · {{ friend_count }} bạn bè{% if not data.is_me and mutual %} · {{ mutual }} bạn chung{% endif %}</div>
+        <div class="chips">
+          <span class="pill">📅 Tham gia {{ data.user.joined }}</span>
+          {% if user.phone_verified %}<span class="pill ok">📱 Đã xác minh SĐT</span>{% endif %}
+          {% if user.identity_verified %}<span class="pill ok">🪪 Đã xác minh danh tính</span>{% endif %}
+        </div>
+      </div>
+      <div class="hero-actions" id="hero-actions">
+        {% if data.is_me %}<button class="btn" id="edit-profile" type="button">✏️ Chỉnh sửa trang cá nhân</button>{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <div class="profile-cols">
+    <aside>
+      <section class="card pad">
+        <h3>Giới thiệu</h3>
+        <p id="hero-bio" class="pre">{{ user.bio or ('Chưa có giới thiệu.' if not data.is_me else 'Thêm vài dòng giới thiệu về bạn.') }}</p>
+        {% if user.birth_year %}<p class="muted">🎂 Sinh năm {{ user.birth_year }}</p>{% endif %}
+      </section>
+      <section class="card pad">
+        <h3>Ảnh</h3>
+        <div class="photo-grid">{% for p in photos %}<img src="{{ p }}" alt="Ảnh" loading="lazy">{% else %}<span class="muted">Chưa có ảnh.</span>{% endfor %}</div>
+      </section>
+      <section class="card pad">
+        <h3>Bạn bè <span class="muted">({{ friend_count }})</span></h3>
+        <div class="friend-grid">{% for f in friends %}<a href="{{ url_for('social.profile_page', username=f.username) }}">{{ avatar_html(f, 'lg') }}<span>{{ f.name }}</span></a>{% else %}<span class="muted">Chưa có bạn bè.</span>{% endfor %}</div>
+      </section>
+    </aside>
+    <section>
+      {% if data.is_me %}
+      <form class="card composer-card" id="composer" enctype="multipart/form-data">
+        <div class="composer-top">{{ avatar_html(current_user) }}<textarea name="body" rows="2" maxlength="5000" placeholder="Bạn đang nghĩ gì?"></textarea></div>
+        <div id="composer-preview" class="composer-preview"></div>
+        <div class="composer-bar"><label class="act">🖼️ Ảnh<input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label><span></span><button class="btn btn-primary" type="submit">Đăng</button></div>
+      </form>
+      {% endif %}
+      <div id="posts" data-prepend="1"></div>
+      <script type="application/json" id="posts-data">{{ data.posts | tojson }}</script>
+    </section>
+  </div>
+  <script type="application/json" id="profile-data">{{ {"user": data.user, "is_me": data.is_me, "relation": data.relation} | tojson }}</script>
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/social.js') }}"></script>
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}

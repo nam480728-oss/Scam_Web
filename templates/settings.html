@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Cài đặt · DangNam{% endblock %}
+{% block content %}
+<main class="page-narrow settings-page" id="settings-page">
+  {% if ok == 'phone' %}<div class="notice ok">✅ Đã xác minh số điện thoại.</div>{% endif %}
+  <section class="card pad">
+    <h2>🎨 Giao diện</h2>
+    <label class="switch-row"><span><b>Chế độ tối</b><small>Dễ nhìn hơn vào ban đêm</small></span><input type="checkbox" class="switch" data-key="dark_mode"></label>
+  </section>
+
+  <section class="card pad">
+    <h2>🛡️ Vệ sĩ chống lừa đảo qua tin nhắn</h2>
+    <p class="muted small">Vệ sĩ đọc các tin nhắn <b>gửi đến bạn</b>. Lần 1 cảnh báo, lần 2 che tin, lần 3 tự động chặn người gửi (gỡ chặn qua Khiếu nại). Người gửi không biết mình bị gắn cờ cho tới lần 3. Bài đăng, bình luận và cuộc gọi không bị quét.</p>
+    <label class="switch-row"><span><b>📖 AI 3 · Đọc vị</b><small>Đọc tin nhắn bằng mô hình đã huấn luyện ({{ ai_name() }}) để nhận ra kịch bản lừa đảo.</small></span><input type="checkbox" class="switch" data-key="agent3_enabled"></label>
+  </section>
+
+  <section class="card pad">
+    <h2>🪪 Xác minh tài khoản <span class="pill">giả lập</span></h2>
+    <div class="verify-row">
+      <div><b>Số điện thoại</b><small class="block muted" id="phone-state"></small></div>
+      <a class="btn btn-sm" href="{{ url_for('auth.verify_phone') }}">Xác minh bằng OTP</a>
+    </div>
+    <div class="verify-row">
+      <div><b>Danh tính</b><small class="block muted" id="id-state"></small></div>
+      <button class="btn btn-sm" id="verify-id" type="button">Xác minh danh tính</button>
+    </div>
+  </section>
+
+  <section class="card pad">
+    <h2>👨‍👩‍👧 Mật mã gia đình</h2>
+    <p class="muted small">Khi tin nhắn giống kiểu kẻ gian giả làm người thân, Vệ sĩ sẽ nhắc bạn hỏi câu bí mật này. Khiếu nại gỡ chặn cũng bắt người bị chặn trả lời đúng. Chỉ người thân thật mới biết đáp án. Đáp án được mã hóa, không ai đọc được.</p>
+    <form id="family-form" class="form-grid">
+      <label>Câu hỏi bí mật<input class="input" name="question" maxlength="200" placeholder="Ví dụ: Tên con chó đầu tiên nhà mình là gì?"></label>
+      <label>Đáp án <small class="muted" id="answer-state"></small><input class="input" name="answer" maxlength="100" placeholder="Để trống nếu giữ đáp án cũ" autocomplete="off"></label>
+      <div><b>Người thân</b> <small class="muted">(chọn trong danh sách bạn bè)</small><div id="family-members" class="check-list"></div></div>
+      <button class="btn btn-primary" type="submit">Lưu Mật mã gia đình</button>
+    </form>
+  </section>
+
+  <section class="card pad">
+    <h2>🧑‍🤝‍🧑 Người giám hộ</h2>
+    <p class="muted small">Người giám hộ (ví dụ con cháu) được báo khi bạn nhận tin lừa đảo lần 2 hoặc khi Vệ sĩ tự động chặn kẻ gian. Họ <b>không</b> xem được nội dung tin nhắn của bạn.</p>
+    <div class="form-row"><select class="input" id="guardian-select"></select><button class="btn btn-primary" id="guardian-save" type="button">Lưu</button></div>
+    <div id="wards" class="muted small"></div>
+  </section>
+  <script type="application/json" id="settings-data">{{ state | tojson }}</script>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/settings.js') }}"></script>{% endblock %}

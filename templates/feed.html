@@ -1,50 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Bảng tin · SafeChat{% endblock %}
+{% block title %}Bảng tin · DangNam{% endblock %}
 {% block content %}
 <main class="feed-layout">
   <aside class="left">
     <div class="side-card">
-      <a class="row" href="{{ url_for('chat.messages_page') }}">
-        <span class="avatar" style="background:{{ current_user.avatar_color }}">{{ current_user.username[:1] }}</span>
-        <span>{{ current_user.username }}</span>
-      </a>
+      <a class="row" href="{{ url_for('social.profile_page', username=current_user.username) }}">{{ avatar_html(current_user) }}<span>{{ current_user.name }}</span></a>
+      <a class="row" href="{{ url_for('social.friends_page') }}">👥 Bạn bè <span class="badge hidden" id="feed-requests">0</span></a>
       <a class="row" href="{{ url_for('chat.messages_page') }}">💬 Tin nhắn</a>
+      <a class="row" href="{{ url_for('guardian.dashboard') }}">🛡️ Bảng điều khiển Vệ sĩ</a>
+      <a class="row" href="{{ url_for('guardian.demo_page') }}">🎬 Trình diễn</a>
+      <a class="row" href="{{ url_for('settings.settings_page') }}">⚙️ Cài đặt</a>
     </div>
     <div class="side-card">
-      <h4>Mô hình đang kiểm duyệt</h4>
-      <div class="tip">🤖 <b>{{ ai_name() }}</b><br>Mọi tin nhắn bạn nhận sẽ được AI kiểm tra và cảnh báo nếu nghi ngờ lừa đảo.</div>
+      <h4>Vệ sĩ của bạn</h4>
+      <div class="agent-mini {{ 'off' if not current_user.agent3_enabled }}"><span>📖</span><div><b>AI 3 · Đọc vị tin nhắn</b><small>{{ ai_name() }}</small></div></div>
+      <div class="agent-mini"><span>⛔</span><div><b>Luật 3 lần</b><small>Cảnh báo → che tin → tự chặn</small></div></div>
     </div>
   </aside>
 
   <section class="center" aria-label="Bảng tin">
-    {% for p in posts %}
-    <article class="post {{ 'warn' if p.author.name == 'Hội Cảnh Giác Mạng' }}">
-      <header class="post-head">
-        <span class="avatar" style="background:{{ p.author.avatar_color }}">{{ p.author.name[:1] }}</span>
-        <div><b>{{ p.author.name }}</b><small>{{ time_ago(p.created_at) }} · 🌐</small></div>
-      </header>
-      <div class="post-body">{{ p.content }}</div>
-      {% if p.image %}<img src="{{ url_for('static', filename=p.image) }}" alt="Ảnh bài viết" loading="lazy">{% endif %}
-      <div class="post-stats"><span>👍❤️ {{ '{:,}'.format(p.likes).replace(',', '.') }}</span><span>{{ p.comments }} bình luận · {{ p.shares }} lượt chia sẻ</span></div>
-      <div class="post-actions"><span>👍 Thích</span><span>💬 Bình luận</span><span>↪ Chia sẻ</span></div>
-    </article>
-    {% else %}
-    <div class="feed-note">Chưa có bài viết. Chạy <code>flask --app app seed-feed</code> để tạo dữ liệu mẫu.</div>
-    {% endfor %}
-    {% if posts %}<div class="feed-note">Bạn đã xem hết bảng tin 🎉 (dữ liệu mô phỏng)</div>{% endif %}
+    <form class="card composer-card" id="composer" enctype="multipart/form-data">
+      <div class="composer-top">{{ avatar_html(current_user) }}<textarea name="body" rows="2" maxlength="5000" placeholder="{{ current_user.name }} ơi, bạn đang nghĩ gì thế?"></textarea></div>
+      <div id="composer-preview" class="composer-preview"></div>
+      <div class="composer-bar">
+        <label class="act">🖼️ Ảnh<input type="file" name="image" accept="image/png,image/jpeg,image/gif,image/webp" hidden></label>
+        <span class="muted small">Bài đăng không bị Vệ sĩ quét</span>
+        <button class="btn btn-primary" type="submit">Đăng</button>
+      </div>
+    </form>
+    <div id="posts" data-prepend="1"></div>
+    <script type="application/json" id="posts-data">{{ items | tojson }}</script>
+    <div class="feed-note">Bạn đã xem hết bảng tin 🎉</div>
   </section>
 
   <aside class="right">
     <div class="side-card">
-      <h4>Mẹo an toàn khi nhắn tin</h4>
-      <div class="tip">🔒 Không chia sẻ mã OTP, mật khẩu cho bất kỳ ai.</div>
-      <div class="tip">📞 Người thân nhờ chuyển tiền gấp? Hãy gọi điện xác minh trước.</div>
-      <div class="tip">🚫 Không bấm vào đường link lạ trong tin nhắn.</div>
+      <h4>Gợi ý kết bạn</h4>
+      {% for u in suggestions %}
+      <a class="row" href="{{ url_for('social.profile_page', username=u.username) }}">
+        {% if u.avatar %}<img class="avatar sm" src="{{ u.avatar }}" alt="">{% else %}<span class="avatar sm" style="background:{{ u.color }}">{{ u.name[:1] }}</span>{% endif %}
+        <span>{{ u.name }}<small class="muted block">{{ u.mutual ~ ' bạn chung' if u.mutual else '@' ~ u.username }}</small></span>
+      </a>
+      {% else %}<div class="muted">Chưa có gợi ý.</div>{% endfor %}
     </div>
     <div class="side-card">
-      <h4>Lời mời kết bạn</h4>
-      <a class="row" href="{{ url_for('chat.messages_page') }}"><span class="avatar sm" style="background:var(--primary)">👥</span><span>Tìm &amp; kết bạn trong Tin nhắn <span class="badge hidden" id="feed-requests">0</span></span></a>
+      <h4>Mẹo an toàn</h4>
+      <div class="tip">🔒 Không chia sẻ mã OTP, mật khẩu cho bất kỳ ai.</div>
+      <div class="tip">📞 Người thân gọi video nhờ chuyển tiền gấp? Hãy hỏi <b>Mật mã gia đình</b>.</div>
+      <div class="tip">🚫 Cơ quan nhà nước không gửi file cài đặt (.apk) qua tin nhắn.</div>
     </div>
   </aside>
 </main>
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/social.js') }}"></script>{% endblock %}

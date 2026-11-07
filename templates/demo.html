@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Trình diễn · DangNam{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">{% endblock %}
+{% block content %}
+<main class="demo-page" id="demo-page">
+  <section class="card pad demo-bar">
+    <div class="demo-pick">
+      <label for="demo-scenario"><b>🎬 Kịch bản</b></label>
+      <select class="input" id="demo-scenario"></select>
+      <button class="btn btn-primary" id="demo-play" type="button">▶ Phát kịch bản</button>
+      <button class="btn" id="demo-reset" type="button" title="Xóa tin cũ, lần chặn, khiếu nại của kịch bản này rồi dựng lại">↺ Làm mới</button>
+      <label class="small muted">Nhịp <select class="input sm" id="demo-delay"><option value="2">2 giây</option><option value="2.5" selected>2,5 giây</option><option value="3">3 giây</option><option value="4">4 giây</option></select></label>
+    </div>
+    <div class="demo-toggles" id="demo-toggles" aria-label="Bật/tắt Vệ sĩ của nạn nhân">
+      <span class="small muted">Vệ sĩ của nạn nhân:</span>
+      <label class="tg"><input type="checkbox" class="switch" data-agent="agent3"> 📖 AI 3 đọc tin nhắn</label>
+    </div>
+  </section>
+  <section class="card pad demo-info" id="demo-info"></section>
+
+  <div class="demo-cols">
+    <section class="demo-col scammer">
+      <h3>😈 Góc nhìn kẻ gian <small id="demo-scammer-name"></small></h3>
+      <div class="phone"><div class="phone-screen" id="col-scammer"></div></div>
+      <p class="muted small">Lần 1–2 kẻ gian <b>không biết</b> mình bị Vệ sĩ gắn cờ. Lần 3 bị tự động chặn thì cả hai bên được thông báo.</p>
+    </section>
+    <section class="demo-col victim">
+      <h3>🧓 Góc nhìn nạn nhân <small id="demo-victim-name"></small></h3>
+      <div class="phone"><div class="phone-screen" id="col-victim"></div></div>
+    </section>
+    <section class="demo-col pipe">
+      <h3>🛡️ Dây chuyền Vệ sĩ</h3>
+      <div class="stages" id="stages">
+        <div class="stage" data-stage="text"><span class="st-ico">🔤</span><b>Tiền xử lý</b><small>chuẩn hóa chữ · gỡ chữ lách luật · từ khóa · STK · link</small><em></em></div>
+        <div class="stage" data-stage="agent3"><span class="st-ico">📖</span><b>AI 3 · Đọc vị</b><small>mô hình {{ ai_name() }} · đọc cả ngữ cảnh cuộc trò chuyện</small><em></em></div>
+        <div class="stage" data-stage="decision"><span class="st-ico">⚖️</span><b>Luật 3 lần</b><small>cảnh báo → che tin → tự chặn</small><em></em></div>
+      </div>
+      <div id="demo-events" class="demo-events"></div>
+    </section>
+  </div>
+
+  <section class="card pad demo-login">
+    <h3>🔑 Đăng nhập nhanh tài khoản demo</h3>
+    <p class="muted small">Để nhắn tin / khiếu nại trực tiếp giữa 2 người: mở 2 cửa sổ trình duyệt (cửa sổ thường + cửa sổ ẩn danh), đăng nhập mỗi bên một tài khoản. Mật khẩu chung: <code>demo123</code>.</p>
+    <div class="acct-grid">
+      {% for a in accounts %}
+      <form method="post" action="{{ url_for('guardian.demo_login', username=a.username) }}" class="acct-card {{ 'bad' if a.scammer }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" title="Đăng nhập vào {{ a.username }}">
+          {% if a.avatar %}<img class="avatar sm" src="{{ a.avatar }}" alt="">{% else %}<span class="avatar sm" style="background:{{ a.color }}">{{ a.name[:1] }}</span>{% endif %}
+          <span><b>{{ a.name }}</b><small>@{{ a.username }} · {{ a.role }}</small></span>
+        </button>
+      </form>
+      {% else %}
+      <div class="notice warn">Chưa có dữ liệu demo cho mô hình này. Chạy <code>python seed.py</code> rồi tải lại trang.</div>
+      {% endfor %}
+    </div>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/pipeline.js') }}"></script><script src="{{ url_for('static', filename='js/demo.js') }}"></script>{% endblock %}

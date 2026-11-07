@@ -1,0 +1,568 @@
+{
+  "_ghi_chu": "Kich ban demo CHI CO TIN NHAN. Moi STK / SDT / ten mien deu GIA. Tai khoan demo: mat khau chung 'demo123'. setup: chay khi seed va khi bam 'Lam moi'. steps: phat truc tiep tren /demo (cach nhau 2-3 giay). Luat 3 lan (chi dua vao AI 3): moi tin bi AI 3 gan co tang 1 lan cho nguoi gui trong cuoc chat: lan 1 canh bao (van hien tin), lan 2 che tin + chan tai APK, lan 3 tu dong chan (go chan qua Khieu nai; thanh cong thi dem lai tu dau).",
+  "password": "demo123",
+  "actors": {
+    "balan": {
+      "name": "Trần Thị Lan",
+      "birth_year": 1964,
+      "bio": "Bà nội của 3 đứa cháu · Thích trồng rau, tập dưỡng sinh",
+      "days": 1200,
+      "verified": true,
+      "phone": true,
+      "color": "#d6336c",
+      "role": "Nạn nhân (Bà Lan, 62 tuổi)"
+    },
+    "thuha": {
+      "name": "Nguyễn Thu Hà",
+      "birth_year": 1990,
+      "bio": "Con gái út của mẹ Lan · Kế toán ở Hà Nội",
+      "days": 1100,
+      "verified": true,
+      "phone": true,
+      "color": "#7b3fe4",
+      "role": "Con gái THẬT của Bà Lan",
+      "avatar_style": "ha"
+    },
+    "nguyenthuha.2025": {
+      "name": "Nguyễn Thu Hà",
+      "days": 1,
+      "color": "#7b3fe4",
+      "role": "Kẻ gian · giả làm Thu Hà (tài khoản mới, cùng ảnh)",
+      "avatar_style": "ha",
+      "scammer": true
+    },
+    "ongminh": {
+      "name": "Lê Văn Minh",
+      "birth_year": 1967,
+      "bio": "Hưu trí · Thích câu cá",
+      "days": 900,
+      "phone": true,
+      "color": "#0b7285",
+      "role": "Nạn nhân (giả công an)"
+    },
+    "canbo.congan": {
+      "name": "Cán bộ Công an Quận",
+      "days": 2,
+      "color": "#1c3d7a",
+      "role": "Kẻ gian · giả công an + gửi APK",
+      "scammer": true
+    },
+    "evn.cskh": {
+      "name": "EVN CSKH",
+      "days": 3,
+      "color": "#f08c00",
+      "role": "Kẻ gian · giả điện lực + link nhái",
+      "scammer": true
+    },
+    "tuyendung.online": {
+      "name": "Tuyển Dụng Online 24h",
+      "days": 2,
+      "color": "#2e9e5b",
+      "role": "Kẻ gian · việc nhẹ lương cao (rải tin)",
+      "scammer": true
+    },
+    "anhtuan": {
+      "name": "Phạm Anh Tuấn",
+      "birth_year": 1995,
+      "bio": "Nhân viên văn phòng · Thích tìm hiểu đầu tư",
+      "days": 700,
+      "phone": true,
+      "color": "#1b74e4",
+      "role": "Nạn nhân (đầu tư tiền ảo)"
+    },
+    "huong.dautu": {
+      "name": "Hương Đầu Tư",
+      "days": 14,
+      "color": "#c2255c",
+      "role": "Kẻ gian · sàn tiền ảo 'nuôi' 10 ngày",
+      "scammer": true
+    },
+    "chilinh": {
+      "name": "Đỗ Chi Linh",
+      "birth_year": 1998,
+      "bio": "Nghiện mua sắm online 🛍️",
+      "days": 800,
+      "phone": true,
+      "color": "#e4572e",
+      "role": "Nạn nhân (giả shipper)"
+    },
+    "shipper.ghn": {
+      "name": "Shipper Giao Hàng Nhanh",
+      "days": 4,
+      "color": "#495057",
+      "role": "Kẻ gian · giả shipper đòi phí ship",
+      "scammer": true
+    },
+    "minhanh": {
+      "name": "Minh Anh",
+      "birth_year": 1999,
+      "bio": "Thích du lịch và trà sữa",
+      "days": 1000,
+      "verified": true,
+      "phone": true,
+      "color": "#d6336c",
+      "role": "Người dùng bình thường (KB 7)"
+    },
+    "hoanglong": {
+      "name": "Hoàng Long",
+      "birth_year": 1998,
+      "bio": "Chạy bộ · Đạp xe",
+      "days": 950,
+      "phone": true,
+      "color": "#0b7285",
+      "role": "Bạn thân của Minh Anh (KB 7)"
+    },
+    "shop.mebong": {
+      "name": "Shop Mẹ Bống",
+      "bio": "Đồ ăn vặt nhà làm · Ship toàn quốc",
+      "days": 1500,
+      "phone": true,
+      "verified": true,
+      "color": "#f08c00",
+      "role": "Shop quen của Minh Anh (KB 7)"
+    }
+  },
+  "friends": [
+    [
+      "balan",
+      "thuha"
+    ],
+    [
+      "balan",
+      "ongminh"
+    ],
+    [
+      "minhanh",
+      "hoanglong"
+    ],
+    [
+      "minhanh",
+      "shop.mebong"
+    ],
+    [
+      "anhtuan",
+      "minhanh"
+    ],
+    [
+      "chilinh",
+      "minhanh"
+    ]
+  ],
+  "family": [
+    [
+      "balan",
+      "thuha",
+      "con gái"
+    ]
+  ],
+  "family_question": {
+    "balan": [
+      "Tên con chó đầu tiên nhà mình là gì?",
+      "Mực"
+    ]
+  },
+  "guardians": [
+    [
+      "balan",
+      "thuha"
+    ]
+  ],
+  "scenarios": [
+    {
+      "id": "gia_nguoi_than",
+      "no": 1,
+      "title": "Giả con gái nhắn tin xin tiền",
+      "summary": "Tài khoản mới tên “Nguyễn Thu Hà” (cùng ảnh đại diện với con gái thật) nhắn Bà Lan: đổi tài khoản, rồi xin 15 triệu gấp, dặn đừng nói với bố.",
+      "expect": "Tin xin tiền bị AI 3 gắn cờ (kịch bản Giả người thân) = lần 1: cảnh báo + gợi ý hỏi Mật mã gia đình; tin vào hộp “Tin nhắn chờ” vì không phải bạn bè",
+      "victim": "balan",
+      "scammers": [
+        "nguyenthuha.2025"
+      ],
+      "steps": [
+        {
+          "type": "message",
+          "from": "nguyenthuha.2025",
+          "to": "balan",
+          "label": "Làm quen lại",
+          "text": "Mẹ ơi con Hà đây, điện thoại con hỏng nên con dùng tài khoản mới này nhé mẹ"
+        },
+        {
+          "type": "message",
+          "from": "nguyenthuha.2025",
+          "to": "balan",
+          "label": "Xin tiền gấp",
+          "text": "mạng yếu quá mẹ ơi, mẹ chuyển con 15 triệu vào stk 99990001234567 Vietcombank nhé, gấp lắm, đừng nói với bố"
+        }
+      ]
+    },
+    {
+      "id": "gia_cong_an",
+      "no": 2,
+      "title": "Giả công an + file APK",
+      "summary": "Người lạ xưng “cán bộ công an quận”, dọa liên quan đường dây rửa tiền rồi gửi XacMinhCongDan.apk.",
+      "expect": "Mỗi tin AI 3 gắn cờ tăng 1 lần · tin kèm APK từ lần 2 → che tin + chặn tải; nếu đủ 3 lần → tự động chặn",
+      "victim": "ongminh",
+      "scammers": [
+        "canbo.congan"
+      ],
+      "steps": [
+        {
+          "type": "message",
+          "from": "canbo.congan",
+          "to": "ongminh",
+          "text": "Chào ông Minh, tôi là cán bộ Công an Quận, cần làm việc với ông về một vụ án."
+        },
+        {
+          "type": "message",
+          "from": "canbo.congan",
+          "to": "ongminh",
+          "text": "Ông có liên quan đến đường dây rửa tiền. Nếu không hợp tác sẽ bị bắt giam ngay trong hôm nay, đừng nói cho ai biết."
+        },
+        {
+          "type": "file",
+          "from": "canbo.congan",
+          "to": "ongminh",
+          "name": "XacMinhCongDan.apk",
+          "text": "Ông cài ứng dụng xác minh công dân này để chứng minh trong sạch."
+        }
+      ]
+    },
+    {
+      "id": "gia_dien_luc",
+      "no": 3,
+      "title": "Giả điện lực + link nhái",
+      "summary": "“EVN CSKH” báo nợ cước, dọa cắt điện trong 2h, gửi link evn-thanhtoan.xyz.",
+      "expect": "AI 3 nhận ra kịch bản giả điện lực → cảnh báo, link trong tin bị làm mờ; tin thứ 2 → lần 2: che tin",
+      "victim": "balan",
+      "scammers": [
+        "evn.cskh"
+      ],
+      "steps": [
+        {
+          "type": "message",
+          "from": "evn.cskh",
+          "to": "balan",
+          "text": "EVN CSKH thông báo: Quý khách đang nợ cước tiền điện tháng này."
+        },
+        {
+          "type": "message",
+          "from": "evn.cskh",
+          "to": "balan",
+          "text": "Nếu không thanh toán, hệ thống sẽ cắt điện trong 2h. Thanh toán ngay tại evn-thanhtoan.xyz/thanh-toan để tránh bị cắt."
+        }
+      ]
+    },
+    {
+      "id": "viec_nhe",
+      "no": 4,
+      "title": "Việc nhẹ lương cao – rải hàng loạt",
+      "summary": "Một tài khoản nhắn tin gần giống nhau cho 20 người lạ: chữ lách luật “v.i.ệ.c n.h.ẹ”, “ib zalo”, “hoa hồng 30%”, bắt chuyển khoản trước để “nhận nhiệm vụ”. Một người bấm Báo cáo.",
+      "expect": "Tiền xử lý gỡ chữ chèn trước khi AI 3 đọc · mỗi người nhận 1 tin = lần 1 · báo cáo được lưu làm nhãn train",
+      "victim": "@first_normal",
+      "scammers": [
+        "tuyendung.online"
+      ],
+      "steps": [
+        {
+          "type": "broadcast",
+          "from": "tuyendung.online",
+          "count": 20,
+          "texts": [
+            "Tuyển CTV v.i.ệ.c n.h.ẹ tại nhà, hoa hồng 30%/đơn, chuyển khoản trước 200k để nhận nhiệm vụ, ib zalo 0390000444 nha",
+            "Tuyen CTV v.i.e.c n.h.e lam tai nha, hoa hong 30% moi don, chuyen khoan truoc 200k nhan nhiem vu, ib zalo 0390000444",
+            "Cần gấp CTV v.i.ệ.c n.h.ẹ, l.ư.ơ.n.g c.a.o, hoa hồng 30%, ck trước 200k nhận việc, ib zl 0390000444 nhé bạn"
+          ]
+        },
+        {
+          "type": "report",
+          "by": "@first_normal",
+          "against": "tuyendung.online",
+          "label": "Một người nhận bấm “Báo cáo lừa đảo” (lưu làm nhãn train)"
+        }
+      ]
+    },
+    {
+      "id": "dau_tu_coin",
+      "no": 5,
+      "title": "Đầu tư tiền ảo “nuôi” 10 ngày",
+      "summary": "Làm quen → khoe lãi → gửi link sàn → giục nạp tiền. Agent 3 theo dõi pha qua từng tin.",
+      "expect": "Pha: Tiếp cận → Tạo lòng tin → Yêu cầu tiền; tin lừa đảo tăng dần lần 1 → lần 2 (che tin)",
+      "victim": "anhtuan",
+      "scammers": [
+        "huong.dautu"
+      ],
+      "steps": [
+        {
+          "type": "message",
+          "from": "huong.dautu",
+          "to": "anhtuan",
+          "days_ago": 10,
+          "label": "Ngày 1 · làm quen",
+          "text": "Chào anh, em thấy anh trong nhóm chạy bộ, mình làm quen được không ạ?"
+        },
+        {
+          "type": "message",
+          "from": "huong.dautu",
+          "to": "anhtuan",
+          "days_ago": 7,
+          "label": "Ngày 4 · tạo lòng tin",
+          "text": "Hôm nay em lãi 12% nhờ chị quản lý sàn hướng dẫn đó anh, lợi nhuận ổn định lắm."
+        },
+        {
+          "type": "message",
+          "from": "huong.dautu",
+          "to": "anhtuan",
+          "days_ago": 3,
+          "label": "Ngày 8 · gửi link sàn",
+          "text": "Anh đăng ký sàn giao dịch này nhé sangiaodich-vip.club, nạp ít trước để thử, rút về ngay."
+        },
+        {
+          "type": "message",
+          "from": "huong.dautu",
+          "to": "anhtuan",
+          "days_ago": 0,
+          "label": "Ngày 10 · giục nạp tiền",
+          "text": "Anh nạp thêm 50 triệu vào số tài khoản 99990005556667 trong hôm nay mới rút được lãi, khẩn cấp anh nhé, đừng nói ai."
+        }
+      ]
+    },
+    {
+      "id": "gia_shipper",
+      "no": 6,
+      "title": "Giả shipper đòi phí ship",
+      "summary": "“Shipper” báo đang giao hàng rồi đòi chuyển khoản phí ship vào số tài khoản lạ.",
+      "expect": "AI 3 nhận ra kịch bản giả shipper → cảnh báo lần 1; nút copy STK có nhắc nhở",
+      "victim": "chilinh",
+      "scammers": [
+        "shipper.ghn"
+      ],
+      "steps": [
+        {
+          "type": "message",
+          "from": "shipper.ghn",
+          "to": "chilinh",
+          "text": "Chào chị, em là shipper Giao Hàng Nhanh, đơn hàng của chị đang giao ạ."
+        },
+        {
+          "type": "message",
+          "from": "shipper.ghn",
+          "to": "chilinh",
+          "text": "Chị chuyển khoản phí ship 32k vào stk 9999000765432 giúp em nhé, em đang đứng dưới nhà, gấp lắm chị ơi."
+        }
+      ]
+    },
+    {
+      "id": "khong_bao_nham",
+      "no": 7,
+      "title": "Chứng minh không báo nhầm",
+      "summary": "Bạn bè nhắn “ck t 200k tiền trà sữa”, shop quen gửi STK, bạn gửi link YouTube.",
+      "expect": "Tất cả AN TOÀN (không tính lần nào)",
+      "victim": "minhanh",
+      "scammers": [],
+      "setup": [
+        {
+          "type": "message",
+          "from": "minhanh",
+          "to": "hoanglong",
+          "days_ago": 30,
+          "text": "Cuối tuần đi chạy bộ ở hồ không?"
+        },
+        {
+          "type": "message",
+          "from": "hoanglong",
+          "to": "minhanh",
+          "days_ago": 30,
+          "text": "Ok luôn, 6h sáng nhé"
+        },
+        {
+          "type": "message",
+          "from": "minhanh",
+          "to": "shop.mebong",
+          "days_ago": 60,
+          "text": "Shop ơi còn bánh tráng trộn không ạ?"
+        },
+        {
+          "type": "message",
+          "from": "shop.mebong",
+          "to": "minhanh",
+          "days_ago": 60,
+          "text": "Còn nha em, chị gửi em 2 bịch nhé"
+        }
+      ],
+      "steps": [
+        {
+          "type": "message",
+          "from": "hoanglong",
+          "to": "minhanh",
+          "text": "ck t 200k tiền trà sữa nhé"
+        },
+        {
+          "type": "message",
+          "from": "shop.mebong",
+          "to": "minhanh",
+          "text": "Shop gửi em STK nhé: 0123456789 Vietcombank, chủ TK Nguyễn Thị Bống, ghi nội dung tên em là được"
+        },
+        {
+          "type": "message",
+          "from": "hoanglong",
+          "to": "minhanh",
+          "text": "xem cái này hay lắm https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        }
+      ]
+    },
+    {
+      "id": "chan_3_lan",
+      "no": 8,
+      "title": "Chặn sau 3 lần + Khiếu nại gỡ chặn",
+      "summary": "Con gái THẬT (Thu Hà) nhắn mẹ 3 tin xin tiền gấp, dặn giữ bí mật – giống hệt kịch bản lừa đảo. Lần 1 cảnh báo, lần 2 che tin, lần 3 Vệ sĩ tự động chặn. Sau đó hai mẹ con khiếu nại: chụp ảnh trực tiếp + Mật mã gia đình + xác nhận nhau → gỡ chặn, đếm lại từ đầu.",
+      "expect": "Lần 1 → lần 2 (che tin) → lần 3 TỰ CHẶN + thông báo 2 bên. Khiếu nại: làm trực tiếp bằng 2 cửa sổ (balan + thuha) vì cần chụp webcam",
+      "victim": "balan",
+      "scammers": [],
+      "reset_pairs": [
+        [
+          "balan",
+          "thuha"
+        ]
+      ],
+      "steps": [
+        {
+          "type": "message",
+          "from": "thuha",
+          "to": "balan",
+          "label": "Lần 1",
+          "text": "Mẹ ơi con đang cần gấp, mẹ chuyển khoản giúp con 5 triệu vào stk 190366887799 Vietcombank nhé, đừng nói với bố"
+        },
+        {
+          "type": "message",
+          "from": "thuha",
+          "to": "balan",
+          "label": "Lần 2",
+          "text": "Mẹ chuyển khoản luôn đi mẹ, khẩn cấp lắm, stk 190366887799, đừng nói với ai nhé"
+        },
+        {
+          "type": "message",
+          "from": "thuha",
+          "to": "balan",
+          "label": "Lần 3",
+          "text": "Mẹ ơi nhanh lên, con cần gấp lắm, chuyển khoản ngay 5 triệu vào stk 190366887799 giúp con, đừng nói với bố"
+        }
+      ]
+    }
+  ],
+  "normal_users": [
+    [
+      "minhkhoa",
+      "Nguyễn Minh Khoa"
+    ],
+    [
+      "thanhtruc",
+      "Lê Thanh Trúc"
+    ],
+    [
+      "quanghuy",
+      "Trần Quang Huy"
+    ],
+    [
+      "ngocmai",
+      "Phạm Ngọc Mai"
+    ],
+    [
+      "ducthang",
+      "Vũ Đức Thắng"
+    ],
+    [
+      "thuytien",
+      "Hoàng Thủy Tiên"
+    ],
+    [
+      "baoanh",
+      "Đặng Bảo Anh"
+    ],
+    [
+      "vanlam",
+      "Bùi Văn Lâm"
+    ],
+    [
+      "kimngan",
+      "Đỗ Kim Ngân"
+    ],
+    [
+      "tuanvu",
+      "Ngô Tuấn Vũ"
+    ],
+    [
+      "haiyen",
+      "Dương Hải Yến"
+    ],
+    [
+      "giabao",
+      "Lý Gia Bảo"
+    ],
+    [
+      "phuonglinh",
+      "Trịnh Phương Linh"
+    ],
+    [
+      "khanhduy",
+      "Mai Khánh Duy"
+    ],
+    [
+      "thaovy",
+      "Cao Thảo Vy"
+    ],
+    [
+      "quocanh",
+      "Tạ Quốc Anh"
+    ],
+    [
+      "myduyen",
+      "Hồ Mỹ Duyên"
+    ],
+    [
+      "trungkien",
+      "Lưu Trung Kiên"
+    ],
+    [
+      "lanhuong",
+      "Phan Lan Hương"
+    ],
+    [
+      "vietdung",
+      "Đinh Việt Dũng"
+    ],
+    [
+      "anhthu",
+      "Châu Anh Thư"
+    ],
+    [
+      "hoangnam",
+      "Kiều Hoàng Nam"
+    ]
+  ],
+  "chitchat": [
+    "Chiều nay đi cà phê không?",
+    "Hôm qua xem phim hay lắm luôn 😂",
+    "Mai nhớ mang sách trả mình nha",
+    "Ok nhé, hẹn 7h tối",
+    "Đi ăn bún chả không?",
+    "Cuối tuần về quê không bạn?",
+    "Nhà mình mới nuôi con mèo, dễ thương lắm",
+    "Chúc mừng sinh nhật nha 🎂",
+    "Họp lớp tháng sau đó, nhớ đi nhé",
+    "Trời mưa to quá, về cẩn thận nha"
+  ],
+  "posts": [
+    "Sáng nay chạy được 10km, mệt nhưng vui 🏃",
+    "Mới học làm bánh flan, thành công ngoài mong đợi 🍮",
+    "Cuối tuần đi Đà Lạt, lạnh mà đẹp quá ☁️",
+    "Nhắc mọi người: KHÔNG chia sẻ mã OTP cho bất kỳ ai nhé!",
+    "Cây nhà lá vườn, rau sạch tự trồng 🥬",
+    "Hôm nay là ngày đầu tiên đi làm ở công ty mới 💼",
+    "Mèo nhà mình lại phá cuộn len rồi 🐱",
+    "Ai biết quán phở nào ngon ở quận 3 không ạ?",
+    "Đọc xong cuốn sách hay, giới thiệu mọi người 📚",
+    "Hoàng hôn ở hồ Tây chiều nay 🌅",
+    "Mới tập guitar được 1 tháng, đã đánh được 3 bài 🎸",
+    "Cả nhà đi picnic cuối tuần, vui quá trời"
+  ]
+}

@@ -17,7 +17,7 @@ class FakePredictor:
 
     def predict(self, text):
         hit = any(k in text.lower() for k in self.KEYWORDS)
-        return (0.97 if hit else 0.03), hit
+        return (0.55 if hit else 0.03), hit           # rui ro vua: muc theo luat 1, bo dem nang dan 1-2-3
 
     def close(self):
         pass
@@ -31,7 +31,8 @@ def app():
         cur.execute("CREATE DATABASE data_scam_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
     conn.close()
     from app import app as flask_app
-    flask_app.config.update(TESTING=True, WTF_CSRF_ENABLED=False, UPLOAD_DIR=Path(__file__).parent / "_uploads")
+    flask_app.config.update(TESTING=True, WTF_CSRF_ENABLED=False, UPLOAD_DIR=Path(__file__).parent / "_uploads",
+                           PUBLIC_UPLOAD_DIR=Path(__file__).parent / "_uploads" / "public", GUARDIAN_ASYNC=False)
     from flask_migrate import upgrade
     with flask_app.app_context():
         upgrade(directory=str(Path(__file__).resolve().parents[1] / "migrations"))
@@ -51,7 +52,9 @@ def clean(app):
     with app.app_context():
         db.session.remove()
         db.session.execute(db.text("SET FOREIGN_KEY_CHECKS=0"))
-        for t in ("scam_counters", "messages", "conversations", "blocks", "friend_requests", "users",
+        for t in ("appeal_captures", "appeals", "guardian_events", "feedback", "reports", "calls", "notifications", "message_reactions",
+                  "post_comments", "post_reactions", "posts", "family_members", "avatar_history", "name_history",
+                  "scam_counters", "messages", "conversations", "blocks", "friend_requests", "users",
                   "feed_posts", "feed_authors"):
             db.session.execute(db.text(f"TRUNCATE TABLE {t}"))
         db.session.execute(db.text("SET FOREIGN_KEY_CHECKS=1"))
@@ -59,6 +62,8 @@ def clean(app):
     manager.set_predictor("svm", FakePredictor())
     from services import realtime
     realtime._presence.clear()
+    from services import call_service
+    call_service.reset()
     yield
     with app.app_context():
         db.session.remove()
@@ -70,7 +75,7 @@ class Actor:
     def __init__(self, app, name, password="matkhau1"):
         self.app, self.name, self.password = app, name, password
         self.client = app.test_client()
-        r = self.client.post("/register", data={"username": name, "password": password, "confirm": password})
+        r = self.client.post("/register", data={"username": name, "display_name": name.capitalize(), "password": password, "confirm": password})
         assert r.status_code == 302, r.data
         with app.app_context():
             from db.models import User
@@ -97,8 +102,8 @@ class Actor:
         assert r.status_code == 200, r.data
         return r.get_json()["conversation"]["id"]
 
-    def say(self, cid, text):
-        return self.post(f"/api/conversations/{cid}/messages", {"body": text})
+    def say(self, cid, text, **extra):
+        return self.post(f"/api/conversations/{cid}/messages", {"body": text, **extra})
 
 
 @pytest.fixture

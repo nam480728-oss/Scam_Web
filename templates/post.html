@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Bài viết · DangNam{% endblock %}
+{% block content %}
+<main class="page-narrow">
+  <div id="posts"></div>
+  <script type="application/json" id="posts-data">{{ items | tojson }}</script>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/social.js') }}"></script>{% endblock %}

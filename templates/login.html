@@ -1,12 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Đăng nhập · SafeChat{% endblock %}
+{% block title %}Đăng nhập · DangNam{% endblock %}
 {% block content %}
 <main class="auth-wrap">
   <div class="auth-grid">
     <section class="auth-intro">
-      <h1>SafeChat</h1>
-      <p>Trò chuyện cùng bạn bè, với AI luôn đứng giữa để cảnh báo khi có dấu hiệu lừa đảo.</p>
-      <p class="model-note" style="text-align:left;margin-top:18px">🤖 Mô hình AI đang dùng: <b>{{ ai_name() }}</b></p>
+      <h1><img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" class="auth-logo"> DangNam</h1>
+      <p>Kết nối với bạn bè và người thân, có <b>Vệ sĩ AI</b> đọc tin nhắn gửi đến bạn để cảnh báo lừa đảo.</p>
+      <ul class="intro-agents">
+        <li><span>📖</span> <b>Đọc vị</b> tin nhắn bằng mô hình <b>{{ ai_name() }}</b></li>
+        <li><span>⚠️</span> <b>Lần 1</b> cảnh báo · <b>lần 2</b> che tin nguy hiểm</li>
+        <li><span>⛔</span> <b>Lần 3</b> tự động chặn kẻ gian, gỡ chặn qua khiếu nại</li>
+      </ul>
     </section>
     <section class="auth-card">
       <h2>Đăng nhập</h2>
@@ -18,6 +22,19 @@
         <button class="btn btn-primary" type="submit">Đăng nhập</button>
       </form>
       <div class="sw">Chưa có tài khoản? <a href="{{ url_for('auth.register') }}"><b>Đăng ký</b></a></div>
+      {% if demo %}
+      <details class="demo-quick">
+        <summary>🎬 Đăng nhập nhanh tài khoản demo</summary>
+        <div class="dq-list">
+          {% for a in demo %}
+          <form method="post" action="{{ url_for('guardian.demo_login', username=a.username) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="{{ 'bad' if a.scammer }}" title="{{ a.role }}"><b>{{ a.name }}</b><small>{{ a.role }}</small></button>
+          </form>
+          {% endfor %}
+        </div>
+      </details>
+      {% endif %}
     </section>
   </div>
   <a class="admin-link" href="{{ url_for('models.admin_page') }}">Quản trị</a>

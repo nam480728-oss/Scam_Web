@@ -1,4 +1,4 @@
-"""SafeChat - website chat co AI trong tai phat hien lua dao.
+"""DangNam - mang xa hoi co Ve si AI chong lua dao qua tin nhan.
 
 Chay:  python app.py        (hoac: flask --app app run)
 CSDL:  flask --app app db upgrade
@@ -7,6 +7,13 @@ Du lieu bang tin gia:  flask --app app seed-feed
 import logging
 import mimetypes
 import os
+
+# Windows: phai nap torch TRUOC scikit-learn/numpy-MKL, neu khong torch bao WinError 1114 (c10.dll) khi
+# quan tri doi tu SVM sang PhoBERT/ViSoBERT.
+try:
+    import torch  # noqa: F401
+except Exception:  # noqa: BLE001 - may khong co torch: SVM van chay
+    pass
 
 import click
 from flask import Flask, jsonify, redirect, request, url_for
@@ -42,12 +49,18 @@ def create_app(config: dict | None = None) -> Flask:
     login_manager.login_view = "auth.login"
     socketio.init_app(app, async_mode="threading", manage_session=False)
 
-    from routes import auth, chat, feed, friends, models
+    from routes import appeal, auth, call, chat, feed, friends, guardian, models, settings, social
+    from services import view_helpers
     from services.ai_client import manager
     app.jinja_env.globals["ai_name"] = lambda: manager.active_name() or "Chưa chọn"
-    for module in (models, auth, feed, chat, friends):
+    view_helpers.register(app)
+    for module in (models, auth, feed, chat, friends, social, settings, guardian, call, appeal):
         app.register_blueprint(module.bp)
     init_socket_events(app)
+    from agents import orchestrator
+    from services import call_service
+    call_service.init(app)
+    orchestrator.init(app)
 
     @login_manager.user_loader
     def load_user(user_id: str):
@@ -116,5 +129,8 @@ def create_app(config: dict | None = None) -> Flask:
 app = create_app()
 
 if __name__ == "__main__":
+    # Demo qua mang LAN: trinh duyet chi cho dung camera/micro tren localhost hoac HTTPS
+    # -> dat HOST=0.0.0.0 va SSL_ADHOC=true (chung chi tu ky, can thu vien cryptography).
+    ssl = "adhoc" if os.getenv("SSL_ADHOC", "false").lower() == "true" else None
     socketio.run(app, host=os.getenv("HOST", "127.0.0.1"), port=int(os.getenv("PORT", "5000")), debug=False,
-                 allow_unsafe_werkzeug=True)
+                 allow_unsafe_werkzeug=True, ssl_context=ssl)

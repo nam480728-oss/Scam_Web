@@ -56,12 +56,38 @@ class Config:
     MAX_UPLOAD_BYTES = 10 * 1024 * 1024            # 10MB / file
     IMAGE_EXTS = {"png", "jpg", "jpeg", "gif", "webp"}
     FILE_EXTS = {"pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "zip", "rar", "7z"}
+    VOICE_EXTS = {"webm", "ogg", "m4a", "mp3", "wav"}      # tin nhan thoai (ghi am tren trinh duyet)
+    MAX_VOICE_SECONDS = 120
+    MAX_VOICE_BYTES = 5 * 1024 * 1024
 
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")   # mat khau trang quan tri (doi mo hinh AI)
 
     MAX_MESSAGE_LEN = 2000
     AI_THRESHOLD = float(os.getenv("AI_THRESHOLD", "0.5"))   # dung cho PhoBERT/ViSoBERT (xac suat >= nguong)
     PAGE_SIZE = 40
+
+    # ---- tai len (anh dai dien / anh bia / anh bai dang: cong khai trong app) ----
+    PUBLIC_UPLOAD_DIR = BASE_DIR / "static" / "uploads"
+    APK_EXTS = {"apk"}                                     # chi luu, KHONG BAO GIO mo / thuc thi
+
+    # ---- Ve si: chay nen (False trong test de chay dong bo) ----
+    GUARDIAN_ASYNC = os.getenv("GUARDIAN_ASYNC", "true").lower() == "true"
+
+    # ---- Bo quyet dinh tin nhan (decision.py) ----
+    LEVEL3_RISK = 0.85                                     # muc "rat nguy hiem" (chi de hien thi trong Hoi Ve si)
+    LEVEL2_RISK = 0.60                                     # rui ro AI 3 >= nguong nay -> tin bi gan co (tinh 1 lan)
+
+    # ---- AI 3 (doc vi - mo hinh da train) ----
+    AGENT3_BACKEND = os.getenv("AGENT3_BACKEND", "local")  # local | http | python | mock
+    AGENT3_URL = os.getenv("AGENT3_URL", "")
+    AGENT3_TIMEOUT = float(os.getenv("AGENT3_TIMEOUT", "15"))
+    AGENT3_MODULE = os.getenv("AGENT3_MODULE", "")         # vd my_model.infer:analyze
+
+    # ---- Demo ----
+    DEMO_QUICK_LOGIN = os.getenv("DEMO_QUICK_LOGIN", "true").lower() == "true"   # nut dang nhap nhanh tai khoan demo
+
+    # ---- WebRTC ----
+    STUN_URLS = [u.strip() for u in os.getenv("STUN_URLS", "").split(",") if u.strip()]
 
     WTF_CSRF_TIME_LIMIT = None
     SESSION_COOKIE_SAMESITE = "Lax"

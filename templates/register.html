@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Đăng ký · SafeChat{% endblock %}
+{% block title %}Đăng ký · DangNam{% endblock %}
 {% block content %}
 <main class="auth-wrap">
   <div class="auth-grid">
     <section class="auth-intro">
-      <h1>SafeChat</h1>
-      <p>Tạo tài khoản chỉ với tên tài khoản và mật khẩu.</p>
-      <p class="model-note" style="text-align:left;margin-top:18px">🤖 Mô hình AI đang dùng: <b>{{ ai_name() }}</b></p>
+      <h1><img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" class="auth-logo"> DangNam</h1>
+      <p>Tạo tài khoản để kết bạn, đăng bài, nhắn tin và gọi video. Xác minh số điện thoại giúp bạn bè tin tưởng bạn hơn.</p>
+      <p class="model-note" style="text-align:left;margin-top:18px">🤖 AI 3 đang dùng mô hình: <b>{{ ai_name() }}</b></p>
     </section>
     <section class="auth-card">
       <h2>Đăng ký</h2>
@@ -14,7 +14,9 @@
       <div class="alert hidden" id="client-error" role="alert"></div>
       <form method="post" id="register-form" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input class="input" name="username" placeholder="Tên tài khoản (3–30 ký tự, chữ không dấu / số / . / _)" value="{{ username }}" autocomplete="username" autofocus required maxlength="30">
+        <input class="input" name="display_name" placeholder="Họ và tên (ví dụ: Nguyễn Văn An)" value="{{ form.display_name }}" autocomplete="name" autofocus required maxlength="80">
+        <input class="input" name="username" placeholder="Tên tài khoản (3–30 ký tự, chữ không dấu / số / . / _)" value="{{ form.username }}" autocomplete="username" required maxlength="30">
+        <input class="input" name="phone" placeholder="Số điện thoại (không bắt buộc, để xác minh OTP)" value="{{ form.phone }}" autocomplete="tel" inputmode="tel" maxlength="16">
         <input class="input" type="password" name="password" placeholder="Mật khẩu (tối thiểu 6 ký tự)" autocomplete="new-password" required minlength="6" maxlength="128">
         <input class="input" type="password" name="confirm" placeholder="Nhập lại mật khẩu" autocomplete="new-password" required maxlength="128">
         <button class="btn btn-primary" type="submit">Đăng ký</button>
@@ -30,7 +32,9 @@
   document.getElementById("register-form").addEventListener("submit", (e) => {
     const f = e.target, box = document.getElementById("client-error");
     let msg = "";
-    if (!/^[A-Za-z0-9_.]{3,30}$/.test(f.username.value.trim())) msg = "Tên tài khoản gồm 3–30 ký tự: chữ cái không dấu, số, dấu chấm hoặc gạch dưới.";
+    if (f.display_name.value.trim().length < 2) msg = "Họ tên gồm 2–80 ký tự.";
+    else if (!/^[A-Za-z0-9_.]{3,30}$/.test(f.username.value.trim())) msg = "Tên tài khoản gồm 3–30 ký tự: chữ cái không dấu, số, dấu chấm hoặc gạch dưới.";
+    else if (f.phone.value.trim() && !/^(0|\+84)(3|5|7|8|9)\d{8}$/.test(f.phone.value.replace(/[\s.\-()]/g, ""))) msg = "Số điện thoại không hợp lệ (ví dụ 0912345678).";
     else if (f.password.value.length < 6) msg = "Mật khẩu phải có ít nhất 6 ký tự.";
     else if (f.password.value !== f.confirm.value) msg = "Hai lần nhập mật khẩu không khớp.";
     if (msg) { e.preventDefault(); box.textContent = msg; box.classList.remove("hidden"); }

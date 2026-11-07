@@ -1,86 +1,218 @@
-# SafeChat — website chat có AI trọng tài phát hiện lừa đảo
+# DangNam — mạng xã hội có Vệ sĩ AI chống lừa đảo qua tin nhắn
 
-Website chat kiểu Facebook / Messenger. Khi hai người nhắn tin, **AI đứng giữa** đọc từng tin nhắn và cảnh báo người nhận
-nếu nghi ngờ lừa đảo. Có thể chọn 1 trong 3 mô hình đã train trong `ai_training/`:
-**TF-IDF + Linear SVM**, **PhoBERT-base-v2**, **ViSoBERT**.
+Mạng xã hội demo (Flask + HTML/CSS/JS thuần): bảng tin, bạn bè, Messenger realtime, gọi thoại / video WebRTC.
+Điểm nhấn là **Vệ sĩ đọc tin nhắn** gửi đến người dùng bằng **AI 3 · Đọc vị** (mô hình đã train trong `ai_training/`:
+TF-IDF+SVM / PhoBERT / ViSoBERT) và áp dụng **luật 3 lần**. Vệ sĩ **chỉ bảo vệ người nhận**; người gửi không biết mình bị gắn cờ
+cho tới lần 3.
 
-## Chạy ứng dụng
+| Lần | Người nhận thấy | Tệp .apk |
+| --- | --- | --- |
+| 1 | Cảnh báo + thẻ giải thích, **tin vẫn hiện**, link bị làm mờ | Phải bấm xác nhận mới tải |
+| 2 | Cảnh báo + **che tin** (bấm mới xem), copy STK đếm ngược 60 giây, người giám hộ được báo | **Chặn tải** |
+| 3 | **Vệ sĩ tự động chặn** người gửi, báo **cả 2 bên** | — |
+
+Bị chặn nhầm (ví dụ con nhắn mẹ xin tiền gấp)? Hai bên **Khiếu nại gỡ chặn**: chụp ảnh trực tiếp + Mật mã gia đình + xác nhận
+nhau. Gỡ chặn xong Vệ sĩ **đếm lại từ lần 1** (vòng lặp): nếu lại lừa đảo 3 lần thì chặn lại.
+
+> Hướng phát triển: thay AI 3 hiện tại (chấm từng tin, train trên SMS) bằng mô hình **nhận diện theo kịch bản** (đọc cả cuộc
+> trò chuyện). Adapter đã gửi sẵn 20 tin gần nhất cho mô hình (mục 5).
+
+---
+
+## 1. Cài đặt
 
 ```powershell
-# 1. Bật MySQL (XAMPP) – CSDL `data_scam` đã được tạo sẵn và đã chạy migration (2 phiên bản)
-# 2. Cài thư viện (một lần)
-pip install -r requirements.txt
+# 1. Bật MySQL / MariaDB (XAMPP). CSDL mặc định: data_scam
+# 2. Cài thư viện
+pip install -r requirements.txt            # torch bản CUDA: xem chú thích trong requirements.txt
+copy .env.example .env                     # rồi sửa SECRET_KEY, ADMIN_PASSWORD...
 
-# 3. (Nếu chưa) tạo CSDL + bảng + dữ liệu bảng tin giả
+# 3. Tạo / nâng cấp bảng (Alembic)
 python -m flask --app app db upgrade
-python -m flask --app app seed-feed
 
-# 4. Chạy
-python app.py            # mở http://127.0.0.1:5000
+# 4. Tạo dữ liệu demo + 8 kịch bản cho cả 3 "thế giới" mô hình
+python seed.py                 # hoặc: python seed.py --model svm   |   --reset (xóa và tạo lại)   |   --no-scan
+
+# 5. Chạy
+python app.py                  # http://127.0.0.1:5000
 ```
 
-Cấu hình kết nối CSDL nằm trong file `.env` (mặc định `root` không mật khẩu, `127.0.0.1:3306`, CSDL `data_scam`).
-Các bảng (xem trong Navicat → refresh): `users`, `friend_requests`, `blocks`, `conversations`, `messages`, `scam_counters`,
-`feed_authors`, `feed_posts`, `alembic_version`.
+Lần đầu mở web, chủ phần mềm chọn mô hình AI 3 (SVM / PhoBERT / ViSoBERT). Mỗi mô hình có “thế giới” tài khoản riêng.
+Muốn đổi mô hình thì vào `/admin` (mật khẩu `ADMIN_PASSWORD`). Không cần Internet khi chạy. Nếu AI 3 lỗi thì adapter tự chuyển
+sang chế độ dự phòng (mock), app không crash.
 
-## Công nghệ
+## 2. Tài khoản demo (mật khẩu chung `demo123`)
 
-- **Giao diện:** HTML + CSS + JavaScript thuần (không dùng React/Bootstrap), Socket.IO client cho thời gian thực.
-- **Máy chủ:** Python **Flask** (Flask-Login, Flask-WTF/CSRF, Flask-SocketIO), SQLAlchemy + Alembic (Flask-Migrate).
-- **CSDL:** MySQL/MariaDB (`data_scam`). **AI:** scikit-learn, PyTorch + Transformers (từ `ai_training/`).
+Có nút **“Đăng nhập nhanh tài khoản demo”** ở trang đăng nhập và trang `/demo`.
 
-## Luồng sử dụng
+| Tài khoản | Tên hiển thị | Vai trò |
+| --- | --- | --- |
+| `balan` | Trần Thị Lan (62 tuổi) | Nạn nhân KB 1, 3, 8 · có Mật mã gia đình, người giám hộ là Thu Hà |
+| `thuha` | Nguyễn Thu Hà | Con gái **thật** của Bà Lan |
+| `nguyenthuha.2025` | Nguyễn Thu Hà | **Kẻ gian** giả làm Thu Hà (tài khoản mới, cùng tên + ảnh) |
+| `ongminh` / `canbo.congan` | Lê Văn Minh / Cán bộ Công an Quận | KB 2: giả công an + APK |
+| `evn.cskh` | EVN CSKH | KB 3: giả điện lực + link nhái |
+| `tuyendung.online` | Tuyển Dụng Online 24h | KB 4: việc nhẹ lương cao, rải tin cho 20 người |
+| `anhtuan` / `huong.dautu` | Phạm Anh Tuấn / Hương Đầu Tư | KB 5: đầu tư tiền ảo “nuôi” 10 ngày |
+| `chilinh` / `shipper.ghn` | Đỗ Chi Linh / Shipper Giao Hàng Nhanh | KB 6: giả shipper đòi phí ship |
+| `minhanh`, `hoanglong`, `shop.mebong` | Minh Anh, Hoàng Long, Shop Mẹ Bống | KB 7: chứng minh không báo nhầm |
+| `minhkhoa`, `thanhtruc`, … | 22 người dùng bình thường | Bạn bè, bài đăng, hội thoại thường ngày |
 
-1. **Chủ phần mềm chọn mô hình** (lần đầu mở web, khi server chưa có mô hình nào): bấm 1 trong 3 thẻ; mô hình được nạp
-   và áp dụng cho **toàn server**. **Người dùng không được chọn mô hình** — họ chỉ đăng ký / đăng nhập.
-2. **Mỗi mô hình có "thế giới" tài khoản riêng**: tài khoản tạo ở SVM không tồn tại ở PhoBERT / ViSoBERT (cùng tên vẫn
-   đăng ký lại được), bạn bè / tin nhắn cũng tách biệt. Đổi lại mô hình cũ thì dữ liệu cũ xuất hiện lại.
-3. **Đổi mô hình sau này**: vào `/admin` (link "Quản trị" ở trang đăng nhập), nhập mật khẩu quản trị
-   (`ADMIN_PASSWORD` trong `.env`, mặc định `admin123` — hãy đổi). Mọi người dùng đang đăng nhập sẽ bị đăng xuất tự động.
-4. **Đăng ký / Đăng nhập**: chỉ cần tên tài khoản + mật khẩu nhập 2 lần.
-5. **Bảng tin**: bài đăng giả (dữ liệu mô phỏng, chỉ xem).
-6. **Tin nhắn**: tìm người dùng → *Kết bạn* → đối phương *Chấp nhận* → nhắn tin thời gian thực
-   (đang nhập, online/offline, đã gửi/đã nhận/đã xem, emoji, gửi ảnh/tệp, chặn / bỏ chặn, hủy kết bạn).
+Mọi STK / SĐT / tên miền trong dữ liệu demo đều **giả**. Kịch bản nằm trong `data/scenarios.json` (sửa tự do).
 
-## AI cảnh báo 3 mức
+## 3. Trình diễn
 
-Đếm số tin bị AI gán cờ **của mỗi người gửi, trong từng cuộc chat, cộng dồn, không reset**:
+- **`/demo`**: chọn kịch bản rồi bấm **▶ Phát kịch bản**. Máy chủ tự gửi tin nhắn, các bước cách nhau 2–3 giây. Màn hình chia
+  3 cột: **kẻ gian | nạn nhân | dây chuyền Vệ sĩ** (Tiền xử lý → AI 3 → Luật 3 lần sáng lần lượt). Công tắc bật/tắt AI 3 của nạn
+  nhân để so sánh trước và sau. Nút **↺ Làm mới** dựng lại dữ liệu của kịch bản (gỡ chặn, xóa khiếu nại).
+- **`/guardian`**: dòng thời gian realtime (tin nhắn, Hỏi Vệ sĩ, khiếu nại). Mỗi tin có 3 cột Tiền xử lý | AI 3 | Quyết định,
+  kèm thời gian xử lý (ms) và chế độ. Thống kê: số tin đã đọc, tin bị gắn cờ, số lần tự chặn, khiếu nại, nhãn từ người dùng.
 
-| Lần | Người nhận thấy | Người gửi thấy |
-|---|---|---|
-| 1 | 🟡 nhãn dưới tin + banner vàng | không thấy gì |
-| 2 | 🔴 nhãn dưới tin + banner đỏ | không thấy gì |
-| 3+ | 🔴 banner đỏ có biểu tượng rung + gợi ý nút **Chặn** (nhãn dưới tin chỉ nhắc, nút chặn nằm ở banner) | hộp thoại (lần 3) + banner luôn hiện, không bao giờ mất trong đoạn chat đó: *“Hệ thống phát hiện bạn đang là đối tượng đi lừa đảo người khác, hãy dừng lại không thì bạn sẽ đi TÒ”* |
+### 8 kịch bản (chỉ tin nhắn)
 
-Hệ thống **không bao giờ tự chặn**, chỉ gợi ý. AI chỉ kiểm tra phần văn bản (ảnh/tệp không được kiểm duyệt).
-Kết quả AI **chỉ gửi cho người nhận**; API không bao giờ trả cờ cho người gửi.
+| # | Kịch bản | Điều xảy ra |
+| --- | --- | --- |
+| 1 | Giả con gái xin tiền | Tài khoản mới tên “Nguyễn Thu Hà” (vào hộp Tin nhắn chờ) xin 15 triệu, dặn đừng nói với bố → lần 1 + gợi ý hỏi Mật mã gia đình |
+| 2 | Giả công an + `XacMinhCongDan.apk` | Dọa rửa tiền → gửi APK; tin APK là lần 2 → che tin + chặn tải |
+| 3 | Giả điện lực + `evn-thanhtoan.xyz` | Dọa cắt điện trong 2h → bị gắn cờ, link bị làm mờ; tin thứ 2 bị che |
+| 4 | Việc nhẹ lương cao, rải hàng loạt | Gỡ chữ chèn “v.i.ệ.c n.h.ẹ” trước khi AI 3 đọc; 20 người nhận, mỗi người lần 1; 1 người báo cáo → lưu nhãn train |
+| 5 | Đầu tư tiền ảo kéo dài 10 ngày | AI 3 theo dõi pha qua ngữ cảnh: Tiếp cận → Tạo lòng tin → Yêu cầu tiền |
+| 6 | Giả shipper đòi phí ship | Đòi chuyển khoản phí ship vào STK lạ → lần 1, nút copy STK có nhắc |
+| 7 | Chứng minh không báo nhầm | “ck t 200k tiền trà sữa”, shop quen gửi STK, link YouTube → **tất cả mức 0** |
+| 8 | Chặn sau 3 lần + khiếu nại | `thuha` (con thật) nhắn mẹ 3 tin xin tiền gấp → lần 1, lần 2 che tin, lần 3 **tự chặn**, báo 2 bên |
 
-## Cấu trúc
+Kết quả cụ thể phụ thuộc mô hình AI 3 đang chọn (trong test dùng AI giả lập: KB 7 luôn mức 0, KB 8 luôn 1 → 2 → 3).
+
+### Demo Khiếu nại gỡ chặn (2 cửa sổ)
+
+1. Phát KB 8 ở `/demo` (hoặc tự nhắn 3 tin lừa đảo) → Bà Lan đã chặn `thuha`.
+2. Cửa sổ thường đăng nhập `balan`, cửa sổ ẩn danh đăng nhập `thuha`. Bên nào cũng thấy thanh “⛔ Vệ sĩ đã tự động chặn” và
+   nút **Khiếu nại gỡ chặn** (cả trong menu đầu chat và tab Đã chặn). Một bên mở, bên kia nhận thông báo, dùng chung 1 khiếu nại.
+3. Mỗi bên bấm **Chụp**: hệ thống ra 1 thao tác ngẫu nhiên (quay trái, há miệng…), đếm 3-2-1 rồi chụp 3 khung cách nhau
+   1 giây. Kiểm tra: thấy khuôn mặt trong ≥ 2 khung (OpenCV) · có cử động giữa các khung (chống ảnh tĩnh).
+4. Nếu Bà Lan đã đặt **Mật mã gia đình** (Cài đặt), bên bị chặn phải trả lời đúng (tối đa 3 lần).
+5. Khi cả 2 đã chụp đạt, mỗi bên xem ảnh của bên kia và bấm “Đúng là người thân của tôi” / “Không phải”.
+6. Cả 2 xác nhận → gỡ chặn, bộ đếm về 0. Một bên từ chối / sai mật mã 3 lần / chụp hỏng 3 lần → thất bại, vẫn chặn.
+7. **Vòng lặp:** gỡ chặn xong Vệ sĩ theo dõi lại **từ đầu**: lại lừa đảo thì lần 1 → lần 2 → lần 3 **chặn lại**
+   (“lần chặn thứ N”), và lại có 3 lượt khiếu nại mới.
+
+Giới hạn: khiếu nại hết hạn sau **24 giờ**, tối đa **3 lần cho mỗi lần bị chặn**, mỗi người chụp tối đa 3 lần. **Ảnh bị xóa khi
+khiếu nại kết thúc**. Chặn do Vệ sĩ không gỡ được bằng nút “Bỏ chặn”, chỉ qua khiếu nại.
+
+**Demo qua 2 máy cùng mạng LAN:** trình duyệt chỉ cho dùng camera / micro trên `localhost` hoặc HTTPS. Đặt `HOST=0.0.0.0` và
+`SSL_ADHOC=true` trong `.env` (chứng chỉ tự ký), mở `https://<IP-máy-chủ>:5000` rồi chấp nhận cảnh báo chứng chỉ.
+
+## 4. Tính năng chat
+
+| Tính năng | Cách dùng | Ghi chú với Vệ sĩ |
+| --- | --- | --- |
+| Tin chữ / ảnh / tệp / emoji | Ô soạn tin, 📎, 😊, kéo thả, dán ảnh | AI 3 đọc chữ (cả chú thích ảnh) |
+| **Tin nhắn thoại** | 🎤 → nói → ➤ Gửi (tối đa 2 phút) | Vệ sĩ **không** đọc được tin thoại: không tính lần. Người gửi đã bị cảnh báo từ lần 2 thì tin thoại bị che (bấm “Vẫn nghe”); tin thoại từ người lạ có dòng nhắc cẩn thận giọng giả |
+| **Trả lời trích dẫn** | Rê chuột vào tin → ↩️ | Trích dẫn tin bị che thì cũng hiện “đã bị che” |
+| **Thu hồi** | ⋯ → Thu hồi với mọi người (trong 24 giờ) | Ẩn với cả 2 bên. Tin lừa đảo bị thu hồi **vẫn tính lần**, người nhận vẫn thấy “đã bị Vệ sĩ cảnh báo” |
+| **Thả cảm xúc** | 😊 → ❤️ 😂 😮 😢 😡 👍 (bấm lại để gỡ) | Bị chặn thì không thả được |
+| **Ghim tin** | ⋯ → Ghim (tối đa 3 tin / cuộc chat) | Thanh ghim đầu khung chat, bấm để nhảy tới tin |
+| **Tìm trong hội thoại** | 🔍 ở đầu khung chat | Bấm kết quả để nhảy tới tin (tự tải tin cũ) |
+| **Kho ảnh / tệp / link** | 🗂️ ở đầu khung chat | Ảnh bị che hiện “🛡️ Ảnh bị che”, link trong tin bị cảnh báo có dấu ⚠️ |
+| Đã nhận / đã xem, đang nhập, Tin nhắn chờ (người lạ), chặn, gọi thoại / video | Như cũ | Cuộc gọi không bị quét |
+
+Ảnh / tệp không kèm chữ cũng giống tin thoại: không tính lần, nhưng bị che (và chặn tải .apk) nếu người gửi đã bị cảnh báo từ lần 2.
+
+## 5. AI 3 · Đọc vị và bộ quyết định
+
+`agents/orchestrator.py` xử lý **mỗi tin nhắn mới** ở chế độ **nền** (background task của Socket.IO): tin tới người nhận ngay,
+cảnh báo đến sau vài mili-giây qua sự kiện `guardian:message`.
 
 ```
-app.py  config.py  .env  requirements.txt
-db/        database.py  models.py            # SQLAlchemy + các bảng
-migrations/                                   # Alembic (Flask-Migrate)
-services/  ai_client.py (nạp 3 mô hình)  alert_manager.py (bộ đếm 3 mức)
-           chat_service.py (nghiệp vụ)  realtime.py (Socket.IO)  seed_feed.py
-routes/    models.py auth.py feed.py chat.py friends.py
-templates/ static/  (css, js, vendor/socket.io, img/posts)
-uploads/   # ảnh/tệp người dùng gửi (không công khai, tải qua API có kiểm tra quyền)
-tests/     # pytest: 24 test (DB thử riêng data_scam_test, AI giả lập)
-ai_training/                                  # code train + mô hình
+Tin nhắn → Tiền xử lý (agents/agent3_text.py) → AI 3 (agents/agent3_adapter.py) → Luật 3 lần (agents/decision.py)
+            chuẩn hóa teencode / chữ chèn,      mô hình + hiệu chỉnh ngữ cảnh,      gắn cờ = AI 3 kết luận lừa đảo
+            tìm từ khóa, STK, link, số tiền     kịch bản + pha + giải thích           hoặc rủi ro ≥ 0.6
 ```
 
-Mô hình được lấy tự động từ lần train đầy đủ mới nhất trong `ai_training/*/outputs/` (bỏ qua các lần `--smoke-test`);
-có thể chỉ định đường dẫn trong `.env` bằng `MODEL_SVM_PATH`, `MODEL_PHOBERT_PATH`, `MODEL_VISO_PATH`.
+**Một tin bị gắn cờ CHỈ dựa vào AI 3** (`is_scam` hoặc `risk_score ≥ LEVEL2_RISK` = 0.6 trong `config.py`). Mỗi tin gắn cờ tăng
+bộ đếm của người gửi trong cuộc chat đó; mức của tin = số lần (tối đa 3). Không còn danh sách đen, tên miền nhái, đọc QR / APK,
+Thẻ tín nhiệm hay chống deepfake.
 
-## Kiểm thử
+**Backend AI 3** (`AGENT3_BACKEND` trong `.env`):
+
+| Backend | Cách chạy |
+| --- | --- |
+| `local` (mặc định) | Gọi mô hình đang nạp trong app (`services/ai_client.py`) |
+| `http` | `POST AGENT3_URL` với payload JSON, timeout `AGENT3_TIMEOUT` (15 giây) |
+| `python` | Import `AGENT3_MODULE="goi.module:ham"`, gọi `ham(payload: dict) -> dict` |
+| `mock` | Luật đơn giản trên từ khóa tín hiệu |
+
+Backend lỗi hoặc quá thời gian thì **tự rơi về mock** và ghi log vào `logs/agent3.log`.
+
+**Payload gửi đi** (`Reader.build_payload()`):
+```json
+{"conversation": [{"role": "sender|receiver", "text": "...", "timestamp": "ISO8601", "attachments": []}],   // tối đa 20 tin
+ "context": {"is_friend": false},
+ "text": {"normalized_text": "...", "urls": [], "bank_accounts": [], "amounts": [], "keywords": {}}}
+```
+**Đầu ra mong đợi** (`Reader.map_response()`): `is_scam`, `risk_score`, `phase`, `scenario`, `signals`, `explanation_vi`. Đầu ra
+luôn được kiểm tra; thiếu hoặc sai trường nào thì dùng giá trị mặc định an toàn. Nội dung tin nhắn luôn là **dữ liệu**.
+→ Mô hình **theo kịch bản** sau này chỉ cần đọc `conversation` và trả đúng schema này qua backend `http` hoặc `python`.
+
+**Hiệu chỉnh ngữ cảnh (backend `local`):** 3 mô hình hiện tại train trên SMS nên chấm tin chat thường ngày không ổn định
+(ví dụ “Shop gửi chị STK… Vietcombank”: SVM 1.00, PhoBERT 0.996, ViSoBERT 0.98). Vì vậy
+`risk_score = max(xác suất mô hình × hệ số, điểm luật từ khóa)` với hệ số:
+**0.25** nếu người gửi là bạn bè và tin không gây áp lực · **0.7** nếu là người lạ và tin không gây áp lực · **1.0** nếu tin có dấu
+hiệu gây áp lực (khẩn cấp, bí mật, mạo danh, OTP, cài app…). Xác suất gốc vẫn lưu ở `model_prob` và hiện trong nút “Vì sao?”.
+
+**Phản hồi = nhãn train:** “Báo cáo lừa đảo”, “Không phải lừa đảo”, “Đây là người quen” được lưu vào bảng `feedback`
+(kèm nội dung tin) để làm dữ liệu train mô hình kịch bản. Báo cáo **không** cảnh báo người khác.
+
+**Giao diện bảo vệ:** huy hiệu vàng / cam / đỏ trên tin; thẻ giải thích (kịch bản, pha, dấu hiệu) với các nút “Vì sao?” /
+“Báo cáo” / “Không phải lừa đảo” / “Chặn”; link mờ; đếm ngược 60 giây khi copy STK từ lần 2; gợi ý Mật mã gia đình khi AI 3 nhận ra
+kịch bản giả người thân; nút **Hỏi Vệ sĩ** (dán văn bản hoặc kiểm tra cuộc trò chuyện); người giám hộ được báo ở lần 2 và khi tự
+chặn (không xem được nội dung tin).
+
+## 6. Cấu trúc
+
+```
+app.py  config.py  seed.py  .env.example  requirements.txt
+agents/      contracts.py  agent3_text.py (tiền xử lý)  agent3_adapter.py (AI 3)  decision.py (luật 3 lần)  orchestrator.py
+data/        teencode.json  keywords.json  scenarios.json
+db/          database.py  models.py                     migrations/  (Alembic)
+routes/      auth (OTP giả lập)  feed  social  friends  chat  call  settings  guardian (+ /demo)  appeal  models
+services/    chat_service  call_service  appeal_service  face_check  social_service  profile_service  notify  guard_view
+             demo_service  alert_manager  ai_client (nạp mô hình AI 3)  realtime (Socket.IO)
+templates/   static/css (style, app, guard, dashboard)  static/js (main, social, chat, call, call_ring, guard_ui, pipeline,
+             guardian, demo, appeal, settings, profile)
+ai_training/ dữ liệu + code train AI 3 (IDF_SVM, phobert, VISO)   tests/  (pytest)
+```
+
+Bảng chính: `users`, `friend_requests`, `blocks` (`source = user | guardian`), `conversations`, `messages` (+ `reply_to_id`,
+`recalled_at`, `pinned_at`), `message_reactions`, `scam_counters`, `guardian_events`, `feedback`, `reports`, `appeals`,
+`appeal_captures`, `calls`, `notifications`, `posts`…
+
+## 7. Kiểm thử
 
 ```powershell
-python -m pytest tests -q        # tạo CSDL tạm data_scam_test (chạy migration thật), xong tự xoá
+python -m pytest tests -q        # tạo CSDL tạm data_scam_test (chạy migration thật), AI 3 giả lập, xong tự xóa
 ```
 
-## Lưu ý
+- `test_app.py`: tài khoản, bạn bè, chat, luật 3 lần (che tin, tự chặn), chặn tay, đính kèm, realtime.
+- `test_chat_features.py`: trả lời trích dẫn, thu hồi (vẫn tính lần), thả cảm xúc, ghim (tối đa 3, nhảy tới tin), tìm kiếm,
+  kho ảnh / tệp / link, tin nhắn thoại + che tin thoại / ảnh khi người gửi đã bị cảnh báo lần 2.
+- `test_appeal.py`: khiếu nại (mở từ 2 phía, chụp đạt / không cử động / thiếu mặt, Mật mã gia đình, 2 bên xác nhận, gỡ chặn
+  + reset bộ đếm + xóa ảnh, hết hạn, tối đa 3 lần, vòng lặp chặn lại lần 2, lần 3).
+- `test_guardian.py`: tiền xử lý, adapter AI 3 (schema, rơi về mock, hiệu chỉnh ngữ cảnh), luật 3 lần chỉ dựa vào AI 3,
+  luồng tin nhắn qua API, báo cáo = nhãn train, Hỏi Vệ sĩ, bảng điều khiển.
+- `test_scenarios.py`: seed + 8 kịch bản. `test_social.py`, `test_calls.py`: mạng xã hội, gọi điện.
 
-- Chạy bằng server phát triển (Werkzeug + Socket.IO chế độ threading) — đủ cho demo; triển khai thật cần WSGI server riêng.
-- Mọi người dùng chung 1 mô hình đang hoạt động; chỉ quản trị viên (mật khẩu `ADMIN_PASSWORD`) mới đổi được.
-- Trên Windows, `app.py` tự khai báo lại MIME cho `.js/.css/.svg` vì registry máy có thể trả sai (`.js` = `text/plain`) làm trình duyệt chặn script.
+## 8. Bảo mật và quyền riêng tư
+
+- CSRF trên mọi form / API ghi; Jinja tự escape; JS chỉ dựng DOM bằng `textContent`.
+- File upload: giới hạn kích thước và loại, lưu với tên ngẫu nhiên. Tệp **APK được lưu với đuôi `.bin`, không bao giờ mở hay
+  thực thi**, luôn tải về dạng `application/octet-stream`.
+- Cuộc gọi: âm thanh / hình ảnh đi thẳng giữa 2 trình duyệt (WebRTC), máy chủ không nhận và không lưu.
+- Tin thu hồi: ẩn với cả 2 bên, nội dung vẫn giữ trong nhật ký Vệ sĩ ở máy chủ (để bằng chứng lừa đảo không bị xóa).
+- Ảnh khiếu nại lưu tạm ở `uploads/appeals/<id>/`, chỉ 2 người trong khiếu nại xem được (sau khi cả 2 đã chụp đạt) và bị
+  xóa khi khiếu nại kết thúc.
+- Mật mã gia đình được lưu dưới dạng hash. Số CCCD khi xác minh danh tính giả lập không được lưu.
+- Trang `/guardian` và `/demo` cho mọi người đã đăng nhập xem (theo yêu cầu); các trang này hiện nội dung tin nhắn của
+  “thế giới” mô hình hiện tại.
+- Windows: `app.py` nạp `torch` trước scikit-learn để tránh lỗi DLL `WinError 1114` khi đổi từ SVM sang PhoBERT / ViSoBERT.
+- Chạy bằng server phát triển (Werkzeug + Socket.IO chế độ threading), đủ cho demo; triển khai thật cần WSGI server riêng.

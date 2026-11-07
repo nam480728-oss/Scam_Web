@@ -78,17 +78,23 @@ def test_admin_can_switch_model(app, monkeypatch):
 
 def test_register_validation(app):
     c = app.test_client()
-    bad = [({"username": "ab", "password": "matkhau1", "confirm": "matkhau1"}, "3–30"),
-           ({"username": "co dau ế", "password": "matkhau1", "confirm": "matkhau1"}, "3–30"),
-           ({"username": "validuser", "password": "123", "confirm": "123"}, "6 ký tự"),
-           ({"username": "validuser", "password": "matkhau1", "confirm": "khac1234"}, "không khớp")]
+    name = {"display_name": "Nguyễn Văn Nam"}
+    bad = [({**name, "username": "ab", "password": "matkhau1", "confirm": "matkhau1"}, "3–30"),
+           ({**name, "username": "co dau ế", "password": "matkhau1", "confirm": "matkhau1"}, "3–30"),
+           ({**name, "username": "validuser", "password": "123", "confirm": "123"}, "6 ký tự"),
+           ({**name, "username": "validuser", "password": "matkhau1", "confirm": "khac1234"}, "không khớp"),
+           ({"display_name": "A", "username": "validuser", "password": "matkhau1", "confirm": "matkhau1"}, "Họ tên"),
+           ({**name, "username": "validuser", "phone": "12345", "password": "matkhau1", "confirm": "matkhau1"}, "Số điện thoại")]
     for data, msg in bad:
         r = c.post("/register", data=data)
         assert r.status_code == 200 and msg in r.get_data(as_text=True), data
-    r = c.post("/register", data={"username": "Nam_01", "password": "matkhau1", "confirm": "matkhau1"})
+    r = c.post("/register", data={**name, "username": "Nam_01", "password": "matkhau1", "confirm": "matkhau1"})
     assert r.status_code == 302 and r.headers["Location"].endswith("/feed")
-    r = app.test_client().post("/register", data={"username": "nam_01", "password": "matkhau1", "confirm": "matkhau1"})
+    r = app.test_client().post("/register", data={**name, "username": "nam_01", "password": "matkhau1", "confirm": "matkhau1"})
     assert "đã tồn tại" in r.get_data(as_text=True)                    # trung ten khong phan biet hoa thuong
+    with app.app_context():
+        u = User.query.filter_by(username="Nam_01").one()
+        assert u.display_name == "Nguyễn Văn Nam" and "nguyen van nam" in u.search_name
 
 
 def test_login_logout_and_safe_next(app, mk):
@@ -110,7 +116,11 @@ def test_feed(app, mk):
         assert seed_feed() == 18 and FeedPost.query.count() == 18
         assert seed_feed() == 0                                    # khong nhan doi
     html = a.get("/feed").get_data(as_text=True)
-    assert "Hội Cảnh Giác Mạng" in html and "post-stats" in html and "Tin nhắn" in html
+    import json
+    import re
+    items = json.loads(re.search(r'id="posts-data">(.*?)</script>', html, re.S).group(1))
+    assert len(items) == 18 and any(it["author"]["name"] == "Hội Cảnh Giác Mạng" and it["fake"] for it in items)
+    assert "Tin nhắn" in html
 
 
 def test_csrf_enforced(app, mk):
@@ -143,7 +153,7 @@ def test_friend_flow(mk):
     assert a.post(f"/api/friend-requests/{rid}/accept").status_code == 404        # chi nguoi nhan moi duoc chap nhan
     assert c.post(f"/api/friend-requests/{rid}/accept").status_code == 404
     assert b.post(f"/api/friend-requests/{rid}/decline").status_code == 200
-    assert a.post("/api/conversations", {"user_id": b.id}).status_code == 403     # chua la ban
+    assert a.post("/api/conversations", {"user_id": b.id}).status_code == 200     # nguoi la van nhan tin duoc (tin nhan cho)
     assert b.post("/api/friend-requests", {"user_id": a.id}).status_code == 201   # moi lai sau khi bi tu choi
     rid = a.get("/api/friend-requests").get_json()["incoming"][0]["id"]
     assert a.post(f"/api/friend-requests/{rid}/accept").status_code == 200
@@ -206,28 +216,34 @@ def test_unicode_and_xss_stored_safely(pair):
 
 
 # ------------------------------------------------------------------ AI 3 muc canh bao
-def test_three_level_warning_and_sender_privacy(app, pair):
+def test_three_strikes_mask_then_auto_block(app, pair):
+    """Lan 1: canh bao (tin van hien) · Lan 2: che tin · Lan 3: TU DONG CHAN + bao ca 2 ben (go chi qua Khieu nai)."""
     a, b, cid = pair
-    levels = []
-    for i in range(5):
+    got = []
+    for i in range(3):
         r = a.say(cid, SCAM + str(i)).get_json()["message"]
-        assert r["warning_level"] == 0 and "ai_score" not in r        # nguoi gui khong thay co cua chinh minh
-        got = b.get(f"/api/conversations/{cid}/messages").get_json()["messages"][-1]
-        levels.append(got["warning_level"])
-    assert levels == [1, 2, 3, 3, 3]
-    # tin binh thuong khong bi gan co
-    assert a.say(cid, OK).status_code == 201
-    assert b.get(f"/api/conversations/{cid}/messages").get_json()["messages"][-1]["warning_level"] == 0
-    # trang thai cuoc chat theo goc nhin tung nguoi
+        assert r["warning_level"] == 0 and "guard" not in r          # nguoi gui khong thay co cua chinh minh
+        got.append(b.get(f"/api/conversations/{cid}/messages").get_json()["messages"][-1])
+    assert [m["warning_level"] for m in got] == [1, 2, 3]
+    assert [m["guard"]["mask"] for m in got] == [False, True, True]  # lan 2 tro di: che noi dung
+    with app.app_context():
+        blk = Block.query.one()
+        assert (blk.blocker_id, blk.blocked_id, blk.source) == (b.id, a.id, "guardian")
+        kinds = {(n.user_id, n.kind) for n in __import__("db.models", fromlist=["Notification"]).Notification.query.all()}
+        assert (b.id, "guardian_block") in kinds and (a.id, "guardian_block") in kinds      # bao ca 2 ben
+    r = a.say(cid, OK)                                                 # nguoi gui bi chan
+    assert r.status_code == 403 and "Khiếu nại" in r.get_json()["error"]
     cb = b.get(f"/api/conversations/{cid}").get_json()["conversation"]
     ca = a.get(f"/api/conversations/{cid}").get_json()["conversation"]
+    assert cb["guardian_block"]["role"] == "protected" and cb["guardian_block"]["appeal"]["can_open"] is True
+    assert ca["guardian_block"]["role"] == "accused" and ca["self_warning"] is True
     assert cb["warning"] == 3 and cb["self_warning"] is False
-    assert ca["warning"] == 0 and ca["self_warning"] is True
-    # lich su nguoi gui: khong co muc canh bao nao
+    r = b.delete(f"/api/blocks/{a.id}")                                # khong go bang nut Bo chan
+    assert r.status_code == 403 and "Khiếu nại" in r.get_json()["error"]
+    assert b.get("/api/blocks").get_json()["blocked"][0]["block_source"] == "guardian"
     assert all(m["warning_level"] == 0 for m in a.get(f"/api/conversations/{cid}/messages").get_json()["messages"])
     with app.app_context():
-        assert Block.query.count() == 0                                # KHONG tu dong chan
-        assert ScamCounter.query.filter_by(conversation_id=cid, user_id=a.id).one().flagged_count == 5
+        assert ScamCounter.query.filter_by(conversation_id=cid, user_id=a.id).one().flagged_count == 3
 
 
 def test_warning_levels_1_and_2_hidden_from_sender(pair):
@@ -243,15 +259,15 @@ def test_counters_per_sender_and_per_conversation(pair, mk):
     c = mk("carol")
     a.befriend(c)
     cid2 = a.conv_with(c)
-    for _ in range(3):
+    for _ in range(2):
         a.say(cid, SCAM)
     a.say(cid2, SCAM)                                                  # cuoc chat khac: bo dem rieng -> lan 1
     assert c.get(f"/api/conversations/{cid2}").get_json()["conversation"]["warning"] == 1
-    assert b.get(f"/api/conversations/{cid}").get_json()["conversation"]["warning"] == 3
+    assert b.get(f"/api/conversations/{cid}").get_json()["conversation"]["warning"] == 2
     # bob nhan lai: bo dem cua bob rieng biet
     b.say(cid, SCAM)
     assert a.get(f"/api/conversations/{cid}").get_json()["conversation"]["warning"] == 1
-    assert b.get(f"/api/conversations/{cid}").get_json()["conversation"]["warning"] == 3
+    assert b.get(f"/api/conversations/{cid}").get_json()["conversation"]["warning"] == 2
 
 
 def test_attachment_caption_is_moderated_but_file_not(app, pair):
@@ -269,9 +285,9 @@ def test_attachment_caption_is_moderated_but_file_not(app, pair):
 
 
 # ------------------------------------------------------------------ chan
-def test_block_two_way_and_unblock_no_auto_block(app, pair):
+def test_manual_block_two_way_and_unblock(app, pair):
     a, b, cid = pair
-    for _ in range(3):
+    for _ in range(2):                                                 # 2 lan: chua tu chan
         a.say(cid, SCAM)
     with app.app_context():
         assert Block.query.count() == 0
@@ -281,25 +297,47 @@ def test_block_two_way_and_unblock_no_auto_block(app, pair):
     r = b.say(cid, OK)
     assert r.status_code == 403 and "đã chặn" in r.get_json()["error"]
     cb = b.get(f"/api/conversations/{cid}").get_json()["conversation"]
-    assert cb["i_blocked"] is True and cb["can_send"] is False
+    assert cb["i_blocked"] is True and cb["can_send"] is False and cb["guardian_block"] is None
     ca = a.get(f"/api/conversations/{cid}").get_json()["conversation"]
     assert ca["blocked_me"] is True and ca["can_send"] is False and ca["other"]["online"] is False
     assert a.get("/api/users/search?q=bob").get_json()["users"] == []      # nguoi chan an khoi tim kiem cua ho
     assert [u["username"] for u in b.get("/api/blocks").get_json()["blocked"]] == ["alice"]
     assert a.post("/api/friend-requests", {"user_id": b.id}).status_code in (400, 403)
     assert b.post("/api/blocks", {"user_id": a.id}).status_code == 201     # chan lai khong loi
-    assert b.delete(f"/api/blocks/{a.id}").status_code == 200
-    assert a.say(cid, OK).status_code == 201                                # bo chan -> nhan tin lai
+    assert b.delete(f"/api/blocks/{a.id}").status_code == 200              # chan tay: bo chan binh thuong
+    assert a.say(cid, OK).status_code == 201
     assert b.post("/api/blocks", {"user_id": b.id}).status_code == 400
-    # lich su van con
-    assert len(b.get(f"/api/conversations/{cid}/messages").get_json()["messages"]) == 4
+    assert len(b.get(f"/api/conversations/{cid}/messages").get_json()["messages"]) == 3
 
 
-def test_unfriend_blocks_sending(pair):
+def test_unfriend_then_message_request(pair):
     a, b, cid = pair
     assert a.delete(f"/api/friends/{b.id}").status_code == 200
-    assert a.say(cid, OK).status_code == 403
-    assert b.get(f"/api/conversations/{cid}").get_json()["conversation"]["can_send"] is False
+    assert a.say(cid, OK).status_code == 201                              # thanh nguoi la: van nhan duoc
+    cb = b.get(f"/api/conversations/{cid}").get_json()["conversation"]
+    assert cb["can_send"] is True and cb["is_friend"] is False and cb["request"] is True
+    assert b.say(cid, "chào") .status_code == 201                         # tra loi -> ra khoi hop tin nhan cho
+    assert b.get(f"/api/conversations/{cid}").get_json()["conversation"]["request"] is False
+
+
+def test_stranger_message_request_and_apk(app, mk):
+    a, s = mk("alice"), mk("stranger")
+    cid = s.conv_with(a)
+    assert s.say(cid, "Chào chị").status_code == 201
+    ca = a.get(f"/api/conversations/{cid}").get_json()["conversation"]
+    assert ca["request"] is True and ca["is_friend"] is False
+    assert s.get(f"/api/conversations/{cid}").get_json()["conversation"]["request"] is False   # nguoi gui khong o hop cho
+    r = s.client.post(f"/api/conversations/{cid}/messages", data={"file": (io.BytesIO(b"PK apk"), "XacMinh.apk")},
+                      content_type="multipart/form-data")
+    assert r.status_code == 201
+    att = r.get_json()["message"]["attachment"]
+    assert att["is_apk"] and not att["is_image"]
+    with app.app_context():
+        m = Message.query.order_by(Message.id.desc()).first()
+        assert not m.attachment_path.endswith(".apk")                                          # khong luu duoi .apk
+    got = a.get(att["url"])
+    assert got.status_code == 200 and got.headers["Content-Type"] == "application/octet-stream"
+    assert "attachment" in got.headers["Content-Disposition"]
 
 
 # ------------------------------------------------------------------ dinh kem
@@ -351,24 +389,29 @@ def test_socket_requires_login(app, sio):
 
 
 def test_realtime_delivery_and_warning_payloads(pair, sio):
+    """Tin den nguoi nhan NGAY (chua co canh bao); Ve si phan tich nen roi day 'guardian:message' CHI cho nguoi nhan.
+    Lan 3: tu dong chan -> ca 2 ben nhan 'block:update' + thong bao."""
     a, b, cid = pair
     ca, cb = sio(a), sio(b)
     ca.get_received(); cb.get_received()
     a.say(cid, SCAM)
-    got_b, got_a = events(cb, "message:new"), events(ca, "message:new")
-    assert got_b[0]["message"]["warning_level"] == 1 and got_b[0]["conversation"]["warning"] == 1
-    assert got_a[0]["message"]["warning_level"] == 0 and "self_warning" not in got_a[0]
-    assert got_b[0]["message"]["delivered_at"]                            # nguoi nhan dang online -> da nhan
+    rb, ra = cb.get_received(), ca.get_received()
+    new_b = [e["args"][0] for e in rb if e["name"] == "message:new"]
+    assert new_b[0]["message"]["warning_level"] == 0 and new_b[0]["message"]["scan"] == "pending"
+    assert new_b[0]["message"]["delivered_at"]
+    g_b = [e["args"][0] for e in rb if e["name"] == "guardian:message"]
+    assert g_b and g_b[0]["message"]["warning_level"] == 1 and g_b[0]["conversation"]["warning"] == 1
+    assert g_b[0]["message"]["guard"]["explanation"] and g_b[0]["message"]["scan"] == "done"
+    assert not [e for e in ra if e["name"] in ("guardian:message", "block:update")]   # nguoi gui khong biet (lan 1-2)
     a.say(cid, SCAM)
-    events(cb, "message:new"); events(ca, "message:new")
+    ca.get_received(); cb.get_received()
     a.say(cid, SCAM)
-    p_b, p_a = events(cb, "message:new")[0], events(ca, "message:new")[0]
-    assert p_b["message"]["warning_level"] == 3 and p_b["conversation"]["warning"] == 3
-    assert "đi TÒ" in p_a["self_warning"] and "self_warning" not in p_b   # chi nguoi gui nhan loi nhac tu lan 3
-    assert p_a["self_warning_count"] == 3
-    a.say(cid, SCAM)
-    assert events(ca, "message:new")[0]["self_warning_count"] == 4           # tu lan 4: van nhac nhung khong mo lai hop thoai
-    assert events(cb, "message:new")[0]["message"]["warning_level"] == 3     # muc toi da van la 3
+    rb, ra = cb.get_received(), ca.get_received()
+    g_b = [e["args"][0] for e in rb if e["name"] == "guardian:message"][0]
+    assert g_b["message"]["warning_level"] == 3 and g_b["conversation"]["guardian_block"]["role"] == "protected"
+    for got in (ra, rb):                                               # lan 3: ca 2 ben duoc bao
+        assert any(e["name"] == "block:update" for e in got)
+        assert any(e["name"] == "notify:new" and e["args"][0]["kind"] == "guardian_block" for e in got)
 
 
 def test_realtime_seen_typing_presence(pair, sio):

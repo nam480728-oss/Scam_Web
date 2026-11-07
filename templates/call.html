@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Cuộc gọi video' if video else 'Cuộc gọi thoại' }} · {{ other.name }} · DangNam{% endblock %}
+{% block body_class %}call-body{% endblock %}
+{% block content %}
+<main class="call-page {{ 'is-video' if video else 'is-audio' }}" id="call-page"
+      data-mode="{{ mode }}" data-conv="{{ conv_id }}" data-call="{{ call_id or '' }}" data-video="{{ 1 if video else 0 }}">
+  <video id="remote-video" class="remote-video" autoplay playsinline></video>
+  <div class="remote-placeholder" id="remote-placeholder">
+    {% if other.avatar %}<img class="avatar call-avatar" src="{{ other.avatar }}" alt="">{% else %}<span class="avatar call-avatar" style="background:{{ other.color }}">{{ other.name[:1] }}</span>{% endif %}
+    <h2>{{ other.name }}{% if other.verified %}<span class="vbadge lg">✔</span>{% endif %}</h2>
+    <p id="call-status">{{ 'Đang chuẩn bị…' }}</p>
+  </div>
+  <video id="local-video" class="local-video" autoplay playsinline muted></video>
+
+  <header class="call-top">
+    <div><b>{{ other.name }}</b> <small id="call-timer"></small></div>
+    <div class="call-top-right">
+      <span class="pill" id="net-pill">🔒 Kết nối trực tiếp (WebRTC)</span>
+    </div>
+  </header>
+
+  <footer class="call-controls">
+    <button class="cbtn" id="btn-mic" type="button" title="Tắt / bật micro">🎙️</button>
+    <button class="cbtn" id="btn-cam" type="button" title="Tắt / bật camera">📷</button>
+    <button class="cbtn end" id="btn-end" type="button" title="Kết thúc">📞</button>
+  </footer>
+  <div class="call-ended hidden" id="call-ended"><h2 id="ended-title">Cuộc gọi đã kết thúc</h2><p id="ended-sub"></p><button class="btn" onclick="window.close()">Đóng cửa sổ</button></div>
+  <script type="application/json" id="call-data">{{ {"other": other} | tojson }}</script>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/call.js') }}"></script>{% endblock %}

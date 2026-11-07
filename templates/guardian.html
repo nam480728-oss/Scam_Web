@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Bảng điều khiển Vệ sĩ · DangNam{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">{% endblock %}
+{% block content %}
+<main class="page-wide gd-page" id="gd-page">
+  <section class="card pad gd-head">
+    <div>
+      <h1>🛡️ Bảng điều khiển Vệ sĩ</h1>
+      <p class="muted small">Dòng thời gian thời gian thực của các tin nhắn được Vệ sĩ đọc (AI 3), Hỏi Vệ sĩ và khiếu nại gỡ chặn trong “thế giới” mô hình <b>{{ ai_name() }}</b>.</p>
+    </div>
+    <div class="gd-modes" id="gd-modes"></div>
+  </section>
+
+  <section class="gd-tiles" id="gd-tiles" aria-label="Thống kê"></section>
+
+  <section class="gd-charts">
+    <div class="card pad">
+      <h3>Tin nhắn theo lần cảnh báo</h3>
+      <div id="gd-levels" class="lv-chart" role="img" aria-label="Số tin nhắn theo mức cảnh báo"></div>
+    </div>
+    <div class="card pad">
+      <h3>Hoạt động 24 giờ qua <small class="muted">(số sự kiện mỗi giờ)</small></h3>
+      <div class="hr-wrap"><canvas id="gd-hourly" height="180" aria-label="Số sự kiện mỗi giờ trong 24 giờ"></canvas><div class="hr-tip hidden" id="gd-tip"></div></div>
+      <details class="small muted"><summary>Xem dạng bảng</summary><div id="gd-hourly-table"></div></details>
+    </div>
+  </section>
+
+  <section class="card pad">
+    <div class="gd-tl-head">
+      <h3>Dòng thời gian <span class="live-dot" title="Cập nhật thời gian thực"></span></h3>
+      <select class="input sm" id="gd-filter" aria-label="Lọc theo loại sự kiện">
+        <option value="">Tất cả sự kiện</option>
+        <option value="message">Tin nhắn</option>
+        <option value="ask">Hỏi Vệ sĩ</option>
+        <option value="appeal">Khiếu nại gỡ chặn</option>
+      </select>
+    </div>
+    <div id="gd-timeline" class="timeline"></div>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/pipeline.js') }}"></script><script src="{{ url_for('static', filename='js/guardian.js') }}"></script>{% endblock %}

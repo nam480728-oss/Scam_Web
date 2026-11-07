@@ -1,0 +1,108 @@
+/* =================================================================== */
+/* ============ Cuộc gọi WebRTC + giao diện bảo vệ (Vệ sĩ) ============ */
+/* =================================================================== */
+
+/* ---- cửa sổ cuộc gọi ---- */
+body.call-body { background: #0b1110; overflow: hidden; }
+.call-page { position: fixed; inset: 0; color: #fff; display: grid; place-items: center; background: radial-gradient(800px 500px at 50% 30%, #17332e, #070b0a); }
+.remote-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; opacity: 0; transition: opacity .3s; }
+.call-page.has-remote-video .remote-video { opacity: 1; } .call-page.has-remote-video .remote-placeholder { display: none; }
+.remote-placeholder { position: relative; text-align: center; z-index: 1; }
+.remote-placeholder h2 { margin: 14px 0 4px; font-size: 28px; } .remote-placeholder p { color: #b6c9c4; margin: 0; }
+.call-avatar { width: 140px; height: 140px; font-size: 54px; box-shadow: 0 0 0 10px rgba(43,181,156,.15), 0 0 0 22px rgba(43,181,156,.07); animation: pulseRing 2s infinite; }
+@keyframes pulseRing { 50% { box-shadow: 0 0 0 16px rgba(43,181,156,.2), 0 0 0 32px rgba(43,181,156,.06); } }
+.local-video { position: absolute; right: 18px; bottom: 96px; width: 220px; max-width: 32vw; aspect-ratio: 4/3; object-fit: cover; border-radius: 14px; background: #111; box-shadow: 0 6px 24px rgba(0,0,0,.5); z-index: 3; transform: scaleX(-1); }
+.call-page.is-audio .local-video { display: none; }
+.call-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: linear-gradient(rgba(0,0,0,.55), transparent); z-index: 4; }
+.call-top small { color: #b6c9c4; margin-left: 6px; } .call-top-right { display: flex; gap: 6px; }
+.call-top .pill { background: rgba(255,255,255,.12); color: #e6eeec; }
+.call-controls { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 16px; z-index: 5; }
+.cbtn { width: 58px; height: 58px; border-radius: 50%; border: 0; font-size: 24px; background: rgba(255,255,255,.16); color: #fff; backdrop-filter: blur(6px); }
+.cbtn:hover { background: rgba(255,255,255,.26); } .cbtn.off { background: #fff; color: #000; position: relative; }
+.cbtn.off::after { content: ""; position: absolute; left: 12px; right: 12px; top: 28px; height: 3px; background: #d92d20; transform: rotate(-35deg); }
+.cbtn.end { background: #d92d20; transform: rotate(135deg); } .cbtn.end:hover { background: #b42318; }
+.call-ended { position: absolute; inset: 0; z-index: 20; background: rgba(5,10,9,.92); display: grid; place-content: center; text-align: center; gap: 8px; }
+
+/* ---- cuộc gọi đến ---- */
+.ring-box { text-align: center; } .ring-avatar { margin: 0 auto 6px; animation: pulseRing 2s infinite; }
+.ring-actions { justify-content: center !important; }
+
+@media (max-width: 700px) {
+  .local-video { width: 110px; bottom: 100px; right: 10px; }
+}
+
+/* =================================================================== */
+/* ============ Giao diện bảo vệ trong ứng dụng (GĐ 7) ================ */
+/* =================================================================== */
+/* ---- banner người lạ ---- */
+.stranger-banner { padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--card-2); display: grid; gap: 8px; }
+.sb-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .sb-ico { font-size: 20px; }
+.stranger-banner .sb-reason { font-size: 13px; color: var(--muted); }
+
+/* ---- tin nhắn: mức cảnh báo ---- */
+.bubble.flag-1 { box-shadow: 0 0 0 2px var(--yellow) !important; }
+.bubble.flag-2 { box-shadow: 0 0 0 2px var(--orange) !important; }
+.bubble.flag-3 { box-shadow: 0 0 0 2px var(--red) !important; }
+.bubble.masked { display: grid; gap: 4px; background: var(--red-bg) !important; color: var(--red-deep) !important; border: 1px dashed var(--red-line); }
+.bubble.masked .mk-sub { font-size: 13px; } .bubble.masked .btn { justify-self: start; margin-top: 4px; }
+.scan-pending { font-size: 11px; color: var(--muted); margin: 2px 6px; animation: blink 1.4s infinite; }
+.blur-link { display: inline-flex; flex-direction: column; gap: 4px; vertical-align: middle; margin: 2px 0; }
+.bl-url { filter: blur(4px); user-select: none; pointer-events: none; text-decoration: underline; }
+.bl-btn { border: 1px solid var(--red-line); background: var(--red-bg); color: var(--red-deep); border-radius: 8px; font-size: 12px; font-weight: 700; padding: 4px 8px; }
+.acct { display: inline-flex; align-items: center; gap: 2px; background: color-mix(in srgb, var(--yellow) 25%, transparent); border-radius: 6px; padding: 0 4px; font-weight: 700; }
+.acct-copy { border: 0; background: transparent; padding: 0 2px; font-size: 13px; }
+
+/* ---- thẻ giải thích dưới tin ---- */
+.guard-card { margin: 6px 0 2px; border-radius: 14px; padding: 10px 12px; border: 1px solid; max-width: 460px; font-size: 14px; }
+.guard-card.l1 { background: var(--yellow-bg); border-color: var(--yellow-line); color: var(--yellow-text); }
+.guard-card.l2 { background: var(--orange-bg); border-color: var(--orange-line); color: var(--orange-text); }
+.guard-card.l3 { background: var(--red-bg); border-color: var(--red-line); color: var(--red-deep); }
+.guard-card.dismissed { background: var(--hover); border-color: var(--line); color: var(--muted); font-size: 12px; padding: 5px 10px; }
+.gc-head { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; } .gc-ico { font-size: 18px; }
+.guard-card.l3 .gc-ico { animation: shake .6s ease-in-out 3; display: inline-block; }
+.gc-text { margin: 6px 0; color: var(--text); } .gc-signals { margin: 4px 0 8px; padding-left: 18px; display: grid; gap: 2px; }
+.gc-apk { background: rgba(217,45,32,.12); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; font-weight: 600; }
+.gc-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.family-box { background: var(--card); color: var(--text); border-radius: 12px; padding: 10px; margin: 8px 0; border: 1px solid var(--line); }
+.family-box p { margin: 4px 0; } .family-box .fq { font-weight: 800; font-size: 15px; }
+
+/* ---- hộp thoại đếm ngược / Vì sao / Hỏi Vệ sĩ ---- */
+.countdown .cd-checks { display: grid; gap: 8px; text-align: left; margin-bottom: 12px; }
+.cd-timer { width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 14px; display: grid; place-items: center; font-size: 26px; font-weight: 800; border: 5px solid var(--red); color: var(--red); }
+.cd-timer.done { border-color: var(--ok); color: var(--ok); }
+.why-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; text-align: left; margin-bottom: 14px; max-height: 60vh; overflow-y: auto; }
+.why-col { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; font-size: 13px; display: grid; gap: 5px; align-content: start; }
+.why-h { display: flex; justify-content: space-between; gap: 6px; align-items: center; } .why-row { overflow-wrap: anywhere; }
+.ask-result { text-align: left; margin-bottom: 12px; } .ask-verdict { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+.ask-result.l2 .ask-verdict, .ask-result.l3 .ask-verdict { color: var(--red); } .ask-result.l1 .ask-verdict { color: var(--yellow-text); }
+.ask-box textarea { width: 100%; }
+@media (max-width: 700px) { .why-grid { grid-template-columns: 1fr; } .guard-card { max-width: 100%; } }
+#banner-box { max-height: 45%; overflow-y: auto; flex: none; }
+.banner { padding: 8px 14px; } .banner .bicon { font-size: 22px; }
+@media (max-width: 860px) {
+  #banner-box { max-height: 30vh; }
+  .stranger-banner { padding: 8px 10px; gap: 6px; } .stranger-banner .sb-reason { display: none; }
+  .banner .btxt { font-size: 13px; } .banner .btn { padding: 4px 8px; font-size: 12px; }
+  .chat-head .icon-btn { width: 32px; height: 32px; font-size: 16px; }
+}
+
+/* ---- chặn tự động (lần 3) trong khung chat ---- */
+.blocked-bar.guardian { background: var(--red-bg); color: var(--text); text-align: left; }
+.gblock { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.gb-ico { font-size: 28px; } .gb-text { flex: 1; min-width: 220px; font-size: 14px; } .gb-text b { color: var(--red-deep); display: block; }
+.gb-st { margin-top: 4px; font-weight: 600; color: var(--muted); } .gb-st.bad { color: var(--red-deep); }
+
+/* ---- trang khiếu nại ---- */
+.appeal-page h1 { margin: 0 0 4px; font-size: 22px; } .appeal-page h2 { font-size: 18px; display: flex; gap: 8px; align-items: center; }
+.ap-top { display: flex; gap: 14px; align-items: flex-start; } .ap-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.ap-progress { margin-top: 12px; display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 14px; }
+.ap-prog-row { display: grid; grid-template-columns: 140px 1fr 1fr; gap: 8px; } .ap-progress .ok { color: var(--ok-text); } .ap-progress .bad { color: var(--red-deep); }
+.ap-num { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 15px; }
+.ap-cam { position: relative; background: #000; border-radius: 14px; overflow: hidden; aspect-ratio: 4/3; max-width: 520px; }
+.ap-cam video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.ap-action { position: absolute; left: 10px; right: 10px; top: 10px; background: rgba(0,0,0,.7); color: #fff; font-size: 20px; font-weight: 800; padding: 10px 12px; border-radius: 12px; text-align: center; }
+.ap-count { position: absolute; inset: 0; display: grid; place-items: center; font-size: 96px; font-weight: 800; color: #fff; text-shadow: 0 4px 20px rgba(0,0,0,.6); }
+.ap-cam-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+.ap-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0 12px; } .ap-photos img { width: 100%; border-radius: 10px; transform: scaleX(-1); }
+.ap-result h2 { margin-top: 0; } .appeal-page .fq { font-weight: 800; font-size: 17px; }
+@media (max-width: 700px) { .ap-prog-row { grid-template-columns: 1fr; } .ap-photos { grid-template-columns: repeat(3, 1fr); } }

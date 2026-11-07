@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Khiếu nại gỡ chặn · DangNam{% endblock %}
+{% block content %}
+<main class="page-narrow appeal-page" id="appeal-page" data-id="{{ appeal_id }}">
+  <section class="card pad ap-head" id="ap-head"></section>
+  <section class="card pad ap-result hidden" id="ap-result"></section>
+
+  <section class="card pad ap-step" id="step-capture">
+    <h2><span class="ap-num">1</span> Chụp xác minh trực tiếp</h2>
+    <p class="muted small">Chỉ chụp bằng camera ngay lúc này (không tải ảnh có sẵn). Bạn sẽ được yêu cầu làm một thao tác ngẫu nhiên,
+      hệ thống tự chụp 3 khung trong khoảng 3 giây. Vệ sĩ kiểm tra ảnh có <b>khuôn mặt</b> và có <b>cử động</b> (chống dùng ảnh tĩnh).
+      Ảnh chỉ lưu tạm để bên kia xác nhận và bị xóa khi khiếu nại kết thúc.</p>
+    <div class="ap-cam">
+      <video id="ap-video" autoplay playsinline muted></video>
+      <div class="ap-action hidden" id="ap-action"></div>
+      <div class="ap-count hidden" id="ap-count"></div>
+    </div>
+    <div class="ap-cam-bar">
+      <button class="btn btn-primary" id="ap-shoot" type="button">📸 Bắt đầu chụp xác minh</button>
+    </div>
+    <div id="ap-capture-msg"></div>
+    <canvas id="ap-canvas" class="hidden"></canvas>
+  </section>
+
+  <section class="card pad ap-step hidden" id="step-question">
+    <h2><span class="ap-num">2</span> Mật mã gia đình</h2>
+    <div id="ap-question"></div>
+  </section>
+
+  <section class="card pad ap-step" id="step-confirm">
+    <h2><span class="ap-num" id="ap-confirm-num">3</span> Hai bên xác nhận nhau</h2>
+    <div id="ap-confirm"></div>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/appeal.js') }}"></script>{% endblock %}
