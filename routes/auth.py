@@ -10,7 +10,6 @@ from sqlalchemy import func
 
 from db.database import db
 from db.models import AVATAR_COLORS, User
-from routes import model_required
 from services import profile_service as ps
 from services.ai_client import manager
 
@@ -28,7 +27,6 @@ def _safe_next(target: str | None) -> str:
 
 
 @bp.route("/login", methods=["GET", "POST"])
-@model_required
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("feed.feed_page"))
@@ -50,7 +48,6 @@ def login():
 
 
 @bp.route("/register", methods=["GET", "POST"])
-@model_required
 def register():
     if current_user.is_authenticated:
         return redirect(url_for("feed.feed_page"))
@@ -102,7 +99,6 @@ def _new_otp(phone: str) -> str:
 
 
 @bp.route("/verify-phone", methods=["GET", "POST"])
-@model_required
 @login_required
 def verify_phone():
     me = current_user

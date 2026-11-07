@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, render_template, request, send_file
 from flask_login import current_user, login_required
 
-from routes import login_required_api, model_required
+from routes import login_required_api
 from services import appeal_service as aps
 
 bp = Blueprint("appeal", __name__)
@@ -13,7 +13,6 @@ def _me():
 
 
 @bp.get("/appeal/<int:aid>")
-@model_required
 @login_required
 def appeal_page(aid: int):
     a = aps.get_appeal(aid, current_user.id)
@@ -22,7 +21,6 @@ def appeal_page(aid: int):
 
 @bp.post("/api/appeals")
 @login_required_api
-@model_required
 def open_appeal():
     uid = (request.get_json(silent=True) or {}).get("user_id")
     if not isinstance(uid, int) or isinstance(uid, bool):
@@ -33,21 +31,18 @@ def open_appeal():
 
 @bp.get("/api/appeals/<int:aid>")
 @login_required_api
-@model_required
 def get_appeal(aid: int):
     return jsonify(appeal=aps.view(aps.get_appeal(aid, current_user.id), current_user.id))
 
 
 @bp.post("/api/appeals/<int:aid>/challenge")
 @login_required_api
-@model_required
 def challenge(aid: int):
     return jsonify(aps.new_challenge(aps.get_appeal(aid, current_user.id), _me()))
 
 
 @bp.post("/api/appeals/<int:aid>/capture")
 @login_required_api
-@model_required
 def capture(aid: int):
     files = [request.files.get(f"frame{i}") for i in range(3)]
     if any(f is None for f in files):
@@ -58,7 +53,6 @@ def capture(aid: int):
 
 @bp.post("/api/appeals/<int:aid>/answer")
 @login_required_api
-@model_required
 def answer(aid: int):
     ans = (request.get_json(silent=True) or {}).get("answer")
     if not isinstance(ans, str):
@@ -69,7 +63,6 @@ def answer(aid: int):
 
 @bp.post("/api/appeals/<int:aid>/confirm")
 @login_required_api
-@model_required
 def confirm(aid: int):
     accept = (request.get_json(silent=True) or {}).get("accept")
     if not isinstance(accept, bool):

@@ -203,12 +203,19 @@ def auto_block(protected: User, offender: User, conv: Conversation) -> None:
     db.session.commit()
     cs._notify_block_change(protected.id, offender.id)
     notify(protected.id, "guardian_block", f"⛔ Vệ sĩ đã TỰ ĐỘNG CHẶN {offender.name} sau 3 lần gửi tin lừa đảo{again}. "
-                                           f"Nếu đây là người thân bị chặn nhầm, hãy bấm Khiếu nại để xác minh và gỡ chặn.",
+                                           f"Nếu đây là người thân bị chặn nhầm, hãy bấm Khiếu nại để xác minh và gỡ chặn. "
+                                           f"Nếu bị lừa, bạn có thể gửi Yêu cầu thông tin truy vết tới quản trị viên.",
            link=f"/messages/{conv.id}", actor_id=offender.id, level=3)
     notify(offender.id, "guardian_block", f"⛔ {SELF_WARNING_TEXT}. Bạn đã bị chặn nhắn tin với {protected.name}{again}. "
                                           f"Nếu nhầm lẫn, hãy bấm Khiếu nại để xác minh danh tính.",
            link=f"/messages/{conv.id}", actor_id=None, level=3)
     _notify_guardian(protected, "kẻ gian bị tự động chặn sau 3 tin lừa đảo", 3)
+    try:                                                         # truy vet IP (chi quan tri vien xem) - loi khong anh huong chan
+        from services.trace_service import create_trace
+        create_trace(protected, offender, conv, block_nth=nth)
+    except Exception:  # noqa: BLE001
+        db.session.rollback()
+        logging.getLogger("dangnam.trace").exception("Tao ho so truy vet that bai")
 
 
 # =========================================================================== #

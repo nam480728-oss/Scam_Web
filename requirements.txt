@@ -13,14 +13,12 @@ requests
 Pillow
 Unidecode
 opencv-python         # dem khuon mat khi chup anh khieu nai go chan (Haar cascade, chay CPU)
-# --- AI 3 (3 mo hinh da train trong ai_training/) ---
+# --- AI 3: TF-IDF + Linear SVM (ai_training/IDF_SVM) ---
 scikit-learn==1.5.0
 joblib
 numpy
 pandas
-torch          # ban CUDA: pip install torch --index-url https://download.pytorch.org/whl/cu128
-transformers>=4.40
-sentencepiece
-pyvi
+# --- Truy vet IP (tuy chon): doc file .mmdb offline (DB-IP Lite / GeoLite2) khi dat GEOIP_DB_PATH ---
+maxminddb
 # --- kiem thu ---
 pytest

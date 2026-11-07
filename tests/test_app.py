@@ -11,69 +11,55 @@ SCAM = "Bấm link này để nhận trúng thưởng nhé"
 OK = "Chiều nay đi ăn cơm không?"
 
 
-# ------------------------------------------------------------------ cong chon mo hinh / xac thuc
-def test_login_requires_model(app):
+# ------------------------------------------------------------------ mo hinh AI 3 (chi TF-IDF + SVM) / quan tri
+def test_home_redirects_and_no_model_selection(app, mk):
     from services.ai_client import manager
-    manager.set_predictor(None, None)
-    manager._predictor = None
-    manager.active = None
-    c = app.test_client()
-    for url in ("/login", "/register", "/feed", "/messages"):
-        r = c.get(url)
-        assert r.status_code == 302 and r.headers["Location"].endswith("/"), url
-    r = c.get("/api/conversations")
-    assert r.status_code in (401, 503)
-    assert c.get("/").status_code == 200                                # chua co mo hinh -> man hinh chon
-
-
-def test_select_page_first_time_only(app):
-    from services.ai_client import manager
-    manager._predictor, manager.active = None, None
-    c = app.test_client()
-    r = c.get("/")                                                   # chua co mo hinh: man hinh chon (chu phan mem)
-    assert r.status_code == 200
-    html = r.get_data(as_text=True)
-    for name in ("TF-IDF + Linear SVM", "PhoBERT-base-v2", "ViSoBERT"):
-        assert name in html
-    d = c.get("/api/models").get_json()
-    assert {m["key"] for m in d["models"]} == {"svm", "phobert", "viso"}
-    assert c.post("/api/models/select/khong-co").status_code == 404
-    manager.set_predictor("svm", FakePredictor())
-    r = c.get("/")                                                   # da co mo hinh: nguoi dung vao thang trang dang nhap
-    assert r.status_code == 302 and r.headers["Location"].endswith("/login")
-    r = c.post("/api/models/select/phobert")                         # nguoi dung thuong khong duoc doi mo hinh
-    assert r.status_code == 403
     assert manager.active == "svm"
+    c = app.test_client()
+    r = c.get("/")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/login")
+    assert c.get("/login").status_code == 200 and c.get("/register").status_code == 200
+    assert c.post("/api/models/select/phobert").status_code in (404, 405)       # khong con doi mo hinh
+    a = mk("alice")
+    r = a.get("/")
+    assert r.status_code == 302 and r.headers["Location"].endswith("/feed")
 
 
-def test_admin_can_switch_model(app, monkeypatch):
+def test_admin_login_and_model_tab(app):
+    c = app.test_client()
+    assert "Mật khẩu quản trị" in c.get("/admin").get_data(as_text=True)
+    assert c.post("/admin", data={"password": "sai"}).status_code == 401
+    assert c.get("/api/admin/traces").status_code == 403
+    assert c.post("/admin", data={"password": app.config["ADMIN_PASSWORD"]}).status_code == 302
+    html = c.get("/admin").get_data(as_text=True)
+    assert "TF-IDF + Linear SVM" in html and "PhoBERT" not in html and "ViSoBERT" not in html
+    for tab in ("traces", "requests", "reputation"):
+        assert c.get(f"/admin?tab={tab}").status_code == 200
+    assert c.get("/api/models/status").get_json()["active"] == "svm"
+    assert c.post("/admin/logout").status_code == 302
+    assert c.get("/api/admin/traces").status_code == 403
+
+
+def test_model_lazy_load_and_mock_fallback(app, mk, monkeypatch):
+    """Mo hinh chua nap -> nap o lan du doan dau; nap loi -> AI 3 roi ve mock, chat van chay."""
     from services import ai_client
     from services.ai_client import manager
-    c = app.test_client()
-    assert c.get("/admin").status_code == 200 and "Mật khẩu quản trị" in c.get("/admin").get_data(as_text=True)
-    r = c.post("/admin", data={"password": "sai"})
-    assert r.status_code == 401
-    assert c.post("/api/models/select/phobert").status_code == 403   # chua la quan tri
-    r = c.post("/admin", data={"password": app.config["ADMIN_PASSWORD"]})
-    assert r.status_code == 302
-    assert "Quản trị" in c.get("/admin").get_data(as_text=True) and "PhoBERT-base-v2" in c.get("/admin").get_data(as_text=True)
-    monkeypatch.setattr(ai_client, "_build", lambda key, spec: FakePredictor())
-    changed = []
-    manager.on_change = lambda key: changed.append(key)
-    try:
-        assert c.post("/api/models/select/phobert").status_code == 200
-        import time
-        for _ in range(100):
-            if not manager.status()["loading"]:
-                break
-            time.sleep(0.05)
-        assert manager.active == "phobert" and manager.status()["error"] is None and changed == ["phobert"]
-    finally:
-        manager.on_change = lambda key: __import__("services.realtime", fromlist=["socketio"]).socketio.emit(
-            "system:model_changed", {"model": key})
-        manager.set_predictor("svm", FakePredictor())
-    assert c.post("/admin/logout").status_code == 302
-    assert c.post("/api/models/select/svm").status_code == 403
+    built = []
+    monkeypatch.setattr(ai_client, "_build", lambda spec: built.append(1) or FakePredictor())
+    manager._predictor, manager._failed_at = None, None
+    assert manager.predict("bấm link trúng thưởng") == (0.55, True) and built == [1]
+    monkeypatch.setattr(ai_client, "_build", lambda spec: (_ for _ in ()).throw(FileNotFoundError("khong co file")))
+    manager._predictor, manager._failed_at = None, None
+    assert manager.predict("xin chào") is None and "khong co file" in manager.status()["error"]
+    a, b = mk("alice"), mk("bob")
+    a.befriend(b)
+    cid = a.conv_with(b)
+    assert a.say(cid, "Chuyển khoản gấp cho mình, đừng nói ai").status_code == 201
+    with app.app_context():
+        from db.models import GuardianEvent
+        ev = GuardianEvent.query.order_by(GuardianEvent.id.desc()).first()
+        assert ev.modes["agent3"].startswith("mock")
+    manager.set_predictor(FakePredictor())
 
 
 def test_register_validation(app):
@@ -129,7 +115,7 @@ def test_csrf_enforced(app, mk):
     try:
         r = app.test_client().post("/login", data={"username": "alice", "password": "matkhau1"})
         assert r.status_code == 400
-        r = app.test_client().post("/api/models/select/svm")
+        r = app.test_client().post("/api/trace-requests", json={"user_id": 1, "reason": "x" * 20})
         assert r.status_code == 400 and r.get_json()["code"] == "csrf"
     finally:
         app.config["WTF_CSRF_ENABLED"] = False
@@ -474,53 +460,3 @@ def test_migration_tables_exist(app):
             "feed_authors", "feed_posts", "alembic_version"} <= tables
 
 
-# ------------------------------------------------------------------ moi mo hinh = the gioi tai khoan rieng
-def test_accounts_separate_per_model(app, mk):
-    from services.ai_client import manager
-    a, b = mk("alice"), mk("bob")
-    a.befriend(b)
-    cid = a.conv_with(b)
-    a.say(cid, OK)
-    old_uid = a.id
-    manager.set_predictor("phobert", FakePredictor())          # quan tri doi sang PhoBERT
-    # phien cu bi vo hieu (dang xuat), tai khoan cu khong ton tai trong the gioi moi
-    assert a.get("/feed").status_code == 302
-    assert a.get("/api/conversations").status_code == 401
-    c = app.test_client()
-    assert "không đúng" in c.post("/login", data={"username": "alice", "password": "matkhau1"}).get_data(as_text=True)
-    # cung ten van dang ky duoc o mo hinh moi (la tai khoan khac)
-    a2 = mk("alice")
-    assert a2.id != old_uid
-    assert a2.get("/api/users/search?q=bob").get_json()["users"] == []      # khong thay nguoi dung mo hinh khac
-    assert a2.get("/api/friends").get_json()["friends"] == []
-    assert a2.get("/api/conversations").get_json()["conversations"] == []
-    # khong the tuong tac cheo bang cach doan id
-    assert a2.post("/api/friend-requests", {"user_id": b.id}).status_code == 404
-    assert a2.post("/api/blocks", {"user_id": b.id}).status_code == 404
-    assert a2.post("/api/conversations", {"user_id": b.id}).status_code == 404
-    assert a2.get(f"/api/conversations/{cid}").status_code == 404
-    # quay lai SVM: du lieu cu con nguyen
-    manager.set_predictor("svm", FakePredictor())
-    c = app.test_client()
-    assert c.post("/login", data={"username": "alice", "password": "matkhau1"}).status_code == 302
-    assert [m["body"] for m in a.get(f"/api/conversations/{cid}/messages").get_json()["messages"]] == [OK]
-    with app.app_context():
-        assert {(u.model_key, u.username) for u in User.query.all()} == {("svm", "alice"), ("svm", "bob"), ("phobert", "alice")}
-
-
-def test_model_switch_broadcast_and_real_switch_path(app, mk, sio, monkeypatch):
-    import time
-    from services import ai_client
-    from services.ai_client import manager
-    a = mk("alice")
-    ca = sio(a)
-    ca.get_received()
-    monkeypatch.setattr(ai_client, "_build", lambda key, spec: FakePredictor())
-    manager.select("viso")
-    for _ in range(100):
-        if not manager.status()["loading"]:
-            break
-        time.sleep(0.05)
-    assert manager.active == "viso" and manager.status()["error"] is None
-    assert any(e["name"] == "system:model_changed" and e["args"][0]["model"] == "viso" for e in ca.get_received())
-    manager.set_predictor("svm", FakePredictor())

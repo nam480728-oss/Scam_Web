@@ -157,6 +157,7 @@
     a.appendChild(avatar(u, "xl"));
     const n = el("b"); n.appendChild(document.createTextNode(u.name)); n.appendChild(SC.badges(u)); a.appendChild(n);
     a.appendChild(el("small", "muted", u.mutual ? `${u.mutual} bạn chung` : "@" + u.username));
+    if (u.reputation) a.appendChild(SC.repBadge(u.reputation));
     c.appendChild(a);
     if (extra) c.appendChild(extra);
     return c;
@@ -174,7 +175,7 @@
         const extra = el("div", "pc-actions");
         extra.appendChild(btn("Chấp nhận", "btn-primary", guard(async () => { await api("POST", `/api/friend-requests/${r.id}/accept`); toast("Đã trở thành bạn bè 🎉", "ok"); load(); })));
         extra.appendChild(btn("Xóa", "", guard(async () => { await api("POST", `/api/friend-requests/${r.id}/decline`); load(); })));
-        inc.appendChild(personCard({ ...r.user, mutual: r.mutual }, extra));
+        inc.appendChild(personCard({ ...r.user, mutual: r.mutual, reputation: r.reputation }, extra));
       });
       const out = $("fr-outgoing"); out.replaceChildren();
       req.outgoing.forEach((r) => out.appendChild(personCard(r.user, btn("Hủy lời mời", "", guard(async () => { await api("DELETE", `/api/friend-requests/${r.id}`); load(); })))));

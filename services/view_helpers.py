@@ -1,7 +1,7 @@
 """Ham dung chung cho template Jinja (avatar, thoi gian, thong tin nguoi dang nhap)."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 from flask_login import current_user
@@ -32,6 +32,18 @@ def time_ago(dt: datetime | None) -> str:
     return dt.strftime("%d/%m/%Y")
 
 
+def vn_time(value) -> str:
+    """Datetime UTC (hoac chuoi ISO ...Z) -> 'HH:MM dd/mm/YYYY' gio Viet Nam (UTC+7)."""
+    if not value:
+        return ""
+    if isinstance(value, str):
+        try:
+            value = datetime.fromisoformat(value.rstrip("Z"))
+        except ValueError:
+            return value
+    return (value + timedelta(hours=7)).strftime("%H:%M %d/%m/%Y")
+
+
 def me_dto() -> dict | None:
     if not current_user.is_authenticated:
         return None
@@ -49,3 +61,4 @@ def ice_servers() -> list[dict]:
 
 def register(app):
     app.jinja_env.globals.update(avatar_html=avatar_html, time_ago=time_ago, me_dto=me_dto, ice_servers=ice_servers)
+    app.jinja_env.filters["vn_time"] = vn_time

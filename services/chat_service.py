@@ -16,7 +16,6 @@ from werkzeug.utils import secure_filename
 from db.database import db, iso, utcnow
 from db.models import Block, Conversation, FriendRequest, Message, MessageReaction, User
 from services import alert_manager
-from services.ai_client import manager
 from services.realtime import emit_to, is_online
 
 
@@ -153,8 +152,12 @@ def _guardian_block_dto(me: int, other_id: int) -> dict | None:
     if gb is None:
         return None
     from services.appeal_service import appeal_summary
-    return {"role": "protected" if gb.blocker_id == me else "accused", "since": iso(gb.created_at),
-            "appeal": appeal_summary(gb.blocker_id, gb.blocked_id, me)}
+    from services.trace_service import request_state
+    protected = gb.blocker_id == me
+    return {"role": "protected" if protected else "accused", "since": iso(gb.created_at),
+            "appeal": appeal_summary(gb.blocker_id, gb.blocked_id, me),
+            # nut "Yeu cau thong tin truy vet": CHI nan nhan (ben duoc bao ve) thay
+            "trace": request_state(me, other_id) if protected else None}
 
 
 def is_message_request(conv: Conversation, me: int) -> bool:
@@ -278,7 +281,13 @@ def conversation_dto(conv: Conversation, me: int) -> dict:
             "send_block_reason": reason, "i_blocked": i_blocked, "blocked_me": blocked_me,
             "is_friend": friend, "request": not friend and is_message_request(conv, me),
             "guardian_block": _guardian_block_dto(me, other_id), "pinned": pinned_messages(conv, me),
-            "mutual": len(friend_ids(me) & friend_ids(other_id)), **state}
+            "mutual": len(friend_ids(me) & friend_ids(other_id)),
+            "reputation": None if friend else _reputation_badge(other, me), **state}
+
+
+def _reputation_badge(other: User, me: int) -> dict:
+    from services.reputation_service import badge
+    return badge(other, me)
 
 
 def list_conversations(me: int) -> list[dict]:
@@ -355,8 +364,6 @@ def send_message(conv: Conversation, sender: User, body: str | None, file_storag
     allowed, reason = send_permission(sender.id, other_id)
     if not allowed:
         raise ChatError(reason, 403)
-    if not manager.ready():
-        raise ChatError("Chưa chọn mô hình AI. Hãy quay lại trang chọn mô hình.", 503)
     body = (body or "").strip()
     if len(body) > cfg["MAX_MESSAGE_LEN"]:
         raise ChatError(f"Tin nhắn quá dài (tối đa {cfg['MAX_MESSAGE_LEN']} ký tự).")
@@ -382,6 +389,8 @@ def send_message(conv: Conversation, sender: User, body: str | None, file_storag
     try:
         msg = Message(conversation_id=conv.id, sender_id=sender.id, kind=att["kind"] if att else "text",
                       body=body or None, reply_to_id=reply.id if reply else None)
+        from services.trace_service import request_meta
+        msg.sender_ip, msg.sender_user_agent = request_meta()   # truy vet: CHI quan tri vien xem
         if att:
             msg.attachment_path, msg.attachment_name = att["path"], att["name"]
             msg.attachment_mime, msg.attachment_size = att["mime"], att["size"]
@@ -633,8 +642,9 @@ def list_requests(me: int) -> dict:
     inc = FriendRequest.query.filter_by(receiver_id=me, status="pending").order_by(FriendRequest.id.desc()).all()
     out = FriendRequest.query.filter_by(sender_id=me, status="pending").order_by(FriendRequest.id.desc()).all()
     mine = friend_ids(me)
+    from services.reputation_service import badge
     return {"incoming": [{"id": r.id, "user": user_dto(r.sender, me, False), "created_at": iso(r.created_at),
-                          "mutual": len(mine & friend_ids(r.sender_id))}
+                          "mutual": len(mine & friend_ids(r.sender_id)), "reputation": badge(r.sender, me)}
                          for r in inc if not block_state(me, r.sender_id)[1]],
             "outgoing": [{"id": r.id, "user": user_dto(r.receiver, me, False), "created_at": iso(r.created_at)}
                          for r in out]}
@@ -761,4 +771,6 @@ def _notify_block_change(me: int, other_id: int):
 
 def list_blocked(me: int) -> list[dict]:
     rows = Block.query.filter_by(blocker_id=me).order_by(Block.id.desc()).all()
-    return [{**user_dto(r.blocked, me, False), "block_source": r.source} for r in rows]
+    from services.trace_service import request_state
+    return [{**user_dto(r.blocked, me, False), "block_source": r.source,
+             "trace": request_state(me, r.blocked_id) if r.source == "guardian" else None} for r in rows]

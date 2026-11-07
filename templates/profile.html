@@ -14,6 +14,7 @@
       <div class="hero-info">
         <h1 id="hero-name">{{ user.name }}{% if user.identity_verified %}<span class="vbadge lg" title="Đã xác minh danh tính">✔</span>{% endif %}</h1>
         <div class="muted">@{{ user.username }} · {{ friend_count }} bạn bè{% if not data.is_me and mutual %} · {{ mutual }} bạn chung{% endif %}</div>
+        {% if reputation %}<div class="rep-line"><span class="rep-badge rep-{{ reputation.level }}" title="{{ reputation.hint }}">{{ reputation.label }}</span><small class="muted">{{ reputation.hint }}</small></div>{% endif %}
         <div class="chips">
           <span class="pill">📅 Tham gia {{ data.user.joined }}</span>
           {% if user.phone_verified %}<span class="pill ok">📱 Đã xác minh SĐT</span>{% endif %}

@@ -69,6 +69,12 @@
     return node;
   }
   const displayName = (u) => (u && (u.name || u.username)) || "";
+  // Huy hiệu độ uy tín (chỉ màu + nhãn; điểm số chỉ quản trị viên thấy)
+  function repBadge(rep) {
+    if (!rep || !rep.level) return document.createDocumentFragment();
+    const b = el("span", `rep-badge rep-${rep.level}`, rep.label); b.title = rep.hint || "";
+    return b;
+  }
   function badges(u) {
     const f = document.createDocumentFragment();
     if (u && u.verified) { const b = el("span", "vbadge", "✔"); b.title = "Đã xác minh danh tính"; f.appendChild(b); }
@@ -99,7 +105,7 @@
     if (m < 1440) return `Hoạt động ${Math.round(m / 60)} giờ trước`; return `Hoạt động ${Math.round(m / 1440)} ngày trước`;
   }
 
-  const SC = window.SC = { api, toast, dialog, avatar, displayName, badges, el, fmtTime, fmtAgo, fmtFull, fmtSize, lastSeen,
+  const SC = window.SC = { api, toast, dialog, avatar, displayName, badges, repBadge, el, fmtTime, fmtAgo, fmtFull, fmtSize, lastSeen,
     socket: null, me: CFG.me || null, cfg: CFG };
 
   // ---- menu thả xuống (người dùng, thông báo) ----
@@ -122,7 +128,7 @@
   });
 
   // ---- thông báo ----
-  const NOTIF_ICON = { friend_request: "👥", friend_accept: "🤝", comment: "💬", reaction: "👍", share: "↪️", scam_alert: "🚨",
+  const NOTIF_ICON = { trace: "🔎", friend_request: "👥", friend_accept: "🤝", comment: "💬", reaction: "👍", share: "↪️", scam_alert: "🚨",
     guardian: "🛡️", guardian_block: "⛔", appeal: "🛡️", call: "📞" };
   function renderNotifs(d) {
     const list = document.getElementById("notif-list"); if (!list) return;
@@ -165,7 +171,6 @@
       const pop = document.getElementById("notif-pop"); if (pop && !pop.classList.contains("hidden")) loadNotifs();
       toast(n.text, n.level >= 2 ? "error" : n.level === 1 ? "warn" : "", { icon: NOTIF_ICON[n.kind] || "🔔", href: n.link, ms: n.level >= 2 ? 7000 : 4500 });
     });
-    SC.socket.on("system:model_changed", () => { location.href = "/"; });   // quản trị viên đổi mô hình -> đăng xuất
     refresh();
   }
 })();

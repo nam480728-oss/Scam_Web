@@ -1,13 +1,12 @@
 """Tao du lieu demo: ~30 nguoi dung binh thuong (anh dai dien sinh bang Pillow), ban be, bai dang, hoi thoai thuong ngay,
-cac tai khoan cua 8 kich ban (data/scenarios.json) - cho CA 3 "the gioi" mo hinh (svm / phobert / viso).
+cac tai khoan cua 8 kich ban (data/scenarios.json).
 
-    python seed.py                    # tao cho ca 3 mo hinh
-    python seed.py --model phobert    # chi 1 mo hinh
-    python seed.py --reset            # xoa du lieu demo cu cua the gioi do roi tao lai
-    python seed.py --no-scan          # khong cho Ve si quet tin cu (nhanh hon)
+    python seed.py              # tao du lieu demo
+    python seed.py --reset      # xoa du lieu demo cu roi tao lai
+    python seed.py --no-scan    # khong cho Ve si quet tin cu (nhanh hon)
 
-Tin nhan cu duoc Ve si quet bang dung mo hinh AI 3 cua the gioi do (neu nap duoc), khong thi dung che do mock.
-Moi STK / SDT / ten mien trong du lieu demo deu la GIA.
+Tin nhan cu duoc Ve si quet bang mo hinh AI 3 (TF-IDF + SVM) neu nap duoc, khong thi dung che do mock.
+Moi STK / SDT / ten mien / IP trong du lieu demo deu la GIA.
 """
 from __future__ import annotations
 
@@ -17,12 +16,12 @@ import sys
 import time
 from datetime import timedelta
 
-from app import app  # nap torch truoc scikit-learn (xem app.py)
+from app import app
+from config import MODEL_KEY
 from db.database import db, utcnow
 from db.models import FamilyMember, Post, PostComment, PostReaction, User
 from services import demo_service as ds
 
-WORLDS = ("svm", "phobert", "viso")
 COLORS = ["#0f7b6c", "#e4572e", "#7b3fe4", "#2e9e5b", "#d6336c", "#f08c00", "#0b7285", "#5f3dc4", "#1b74e4", "#c2255c"]
 POST_COLORS = [("#0f7b6c", "#74c0a8"), ("#e8590c", "#ffd43b"), ("#364fc7", "#74c0fc"), ("#862e9c", "#f783ac"), ("#2b8a3e", "#a9e34b")]
 
@@ -34,19 +33,16 @@ def seed_world(model_key: str, reset: bool, scan: bool):
     t0 = time.time()
     if scan:
         try:
-            manager.select_blocking(model_key)
+            manager.load_blocking()
             print(f"  [AI 3] dung mo hinh {manager.active_name()} de quet tin cu")
         except Exception as e:  # noqa: BLE001
-            manager._predictor, manager.active = None, model_key
-            print(f"  [AI 3] khong nap duoc mo hinh {model_key} ({e}) -> Ve si dung che do mock")
-    else:
-        manager.active = model_key
+            print(f"  [AI 3] khong nap duoc mo hinh ({e}) -> Ve si dung che do mock")
     if reset:
         names = list(data["actors"]) + [u for u, _ in data["normal_users"]]
         for u in User.query.filter(User.model_key == model_key, User.username.in_(names)).all():
             db.session.delete(u)
         db.session.commit()
-        print(f"  da xoa du lieu demo cu cua the gioi '{model_key}'")
+        print("  da xoa du lieu demo cu")
 
     # ---- nguoi dung binh thuong ----
     normals = []
@@ -63,7 +59,8 @@ def seed_world(model_key: str, reset: bool, scan: bool):
         actors[username] = ds.ensure_user(model_key, username, spec["name"], days=spec.get("days", 400), color=spec.get("color", "#0f7b6c"),
                                           bio=spec.get("bio"), birth_year=spec.get("birth_year"), verified=spec.get("verified", False),
                                           phone=spec.get("phone", False), style=spec.get("avatar_style"),
-                                          avatar_key="thuha" if spec.get("avatar_style") == "ha" else None)
+                                          avatar_key="thuha" if spec.get("avatar_style") == "ha" else None,
+                                          old_names=spec.get("old_names"), demo_ip=spec.get("demo_ip"))
     db.session.commit()
 
     # ---- ban be: do thi ngau nhien giua nguoi binh thuong + quan he kich ban ----
@@ -127,12 +124,15 @@ def seed_world(model_key: str, reset: bool, scan: bool):
                 ds.run_setup(model_key, sc, process=scan)
     db.session.commit()
     total = User.query.filter_by(model_key=model_key).count()
-    print(f"  xong the gioi '{model_key}': {total} nguoi dung · {time.time() - t0:.1f}s")
+    print(f"  xong: {total} nguoi dung · {time.time() - t0:.1f}s")
 
 
 def main():
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")                # console Windows (cp1252) khong in duoc tieng Viet
+    except (AttributeError, ValueError):
+        pass
     ap = argparse.ArgumentParser(description="Tao du lieu + kich ban demo cho DangNam")
-    ap.add_argument("--model", choices=WORLDS + ("all",), default="all")
     ap.add_argument("--reset", action="store_true")
     ap.add_argument("--no-scan", action="store_true")
     args = ap.parse_args()
@@ -142,9 +142,7 @@ def main():
         n = seed_feed()
         if n:
             print(f"Bang tin gia: them {n} bai")
-        for w in (WORLDS if args.model == "all" else (args.model,)):
-            print(f"== The gioi mo hinh: {w}")
-            seed_world(w, args.reset, not args.no_scan)
+        seed_world(MODEL_KEY, args.reset, not args.no_scan)
     print("\nTai khoan demo (mat khau chung: %s):" % ds.load()["password"])
     for u, spec in ds.load()["actors"].items():
         print(f"  {u:<18} {spec['name']:<24} {spec.get('role', '')}")

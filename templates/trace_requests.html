@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Yêu cầu truy vết · DangNam{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% endblock %}
+{% block content %}
+<main class="page-wide">
+  <section class="card pad">
+    <h2>🔎 Yêu cầu thông tin truy vết của tôi</h2>
+    <p class="muted small">Khi Vệ sĩ tự động chặn kẻ gửi tin lừa đảo, hệ thống lưu IP và vị trí gần đúng của người đó để phục vụ điều tra.
+      Chỉ quản trị viên xem được. Bạn gửi yêu cầu ở thanh “⛔ Vệ sĩ đã tự động chặn” trong cuộc chat hoặc tab Đã chặn; được duyệt thì thông tin
+      hiện ở đây. Vị trí chỉ là <b>gần đúng</b> (tỉnh/thành, nhà mạng), hãy nộp cho cơ quan công an để xác minh.</p>
+    {% if not requests %}<p class="empty">Bạn chưa gửi yêu cầu nào.</p>{% endif %}
+    {% for r in requests %}
+    <article class="req-card st-{{ r.status }}">
+      <div class="req-head">
+        Truy vết <b>{{ r.offender_name }}</b> <small class="muted">@{{ r.offender_username }}</small>
+        <span class="pill {{ {'pending': 'warn', 'approved': 'ok', 'rejected': 'danger'}[r.status] }}">
+          {{ {'pending': 'Chờ quản trị viên duyệt', 'approved': 'Đã duyệt', 'rejected': 'Bị từ chối'}[r.status] }}</span>
+      </div>
+      <p class="muted small">Gửi lúc {{ r.created_at | vn_time }} · Lý do: {{ r.reason }}</p>
+      {% if r.admin_note %}<p class="small">Quản trị viên: {{ r.admin_note }}</p>{% endif %}
+      {% if r.trace %}
+      <div class="kv">
+        <div><span>IP</span><b><code>{{ r.trace.ip or 'Không có' }}</code></b></div>
+        <div><span>Vị trí gần đúng</span><b>{{ r.trace.place }}</b></div>
+        <div><span>Nhà mạng</span><b>{{ r.trace.isp or '–' }}</b></div>
+        <div><span>Ghi nhận lúc</span><b>{{ r.trace.created_at | vn_time }}</b></div>
+      </div>
+      <p class="muted small">Nguồn định vị: {{ r.trace.geo_label }}.
+        {% if r.trace.ips|length > 1 %}Các IP khác đã dùng:
+        {% for x in r.trace.ips %}{% if x.ip != r.trace.ip %}<span class="ip-chip"><code>{{ x.ip }}</code> {{ x.place }}</span>{% endif %}{% endfor %}{% endif %}</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </section>
+</main>
+{% endblock %}

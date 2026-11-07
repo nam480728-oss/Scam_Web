@@ -5,7 +5,7 @@
 <main class="auth-wrap">
   <section class="auth-card" style="width:min(400px,100%)">
     <h2>🛠️ Quản trị viên</h2>
-    <p style="color:var(--muted);margin:0 0 12px">Nhập mật khẩu quản trị để đổi mô hình AI của hệ thống.</p>
+    <p style="color:var(--muted);margin:0 0 12px">Nhập mật khẩu quản trị để xem mô hình AI, hồ sơ truy vết IP và độ uy tín tài khoản.</p>
     {% if error %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
     <form method="post">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

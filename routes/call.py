@@ -4,14 +4,12 @@ from flask_login import current_user, login_required
 
 from db.database import db
 from db.models import Call
-from routes import model_required
 from services import chat_service as cs
 
 bp = Blueprint("call", __name__)
 
 
 @bp.get("/call/new")
-@model_required
 @login_required
 def new_call():
     cid = request.args.get("conv", type=int)
@@ -25,7 +23,6 @@ def new_call():
 
 
 @bp.get("/call/<int:call_id>")
-@model_required
 @login_required
 def answer_call(call_id: int):
     call = db.session.get(Call, call_id)
